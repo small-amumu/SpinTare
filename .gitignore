@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+work/
+*.gguf
+*.safetensors
+*.bin
+*.kvmu
+*.kvpm
+*.kvmr
+*.log
+.DS_Store
+# frozen result files are part of the repository (mean files, run logs)
+!results/**
+.ruff_cache/
+.pytest_cache/

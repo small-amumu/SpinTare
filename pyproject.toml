@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spintare"
+version = "0.1.0"
+description = "SpinTare: detection and mitigation of offset-induced K-cache collapse in low-bit KV caches"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.3", "transformers>=4.56", "safetensors", "numpy"]
+keywords = ["llm", "inference", "kv-cache", "quantization", "llama.cpp", "vllm"]
+
+[project.optional-dependencies]
+layout = ["gguf>=0.19"]
+figures = ["matplotlib>=3.8"]
+test = ["pytest", "gguf>=0.19"]
+
+[project.scripts]
+spintare = "spintare.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["spintare*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

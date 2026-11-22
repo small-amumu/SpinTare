@@ -1,0 +1,16 @@
+SpinTare
+Copyright 2026 The SpinTare Authors
+
+patches/llama.cpp/*.patch modify llama.cpp (https://github.com/ggml-org/llama.cpp), Copyright (c) 2023-2026 The
+ggml authors, licensed under the MIT License (patches/llama.cpp/LICENSE-llama.cpp.txt). The patched files remain
+under that license; the new files added by the patches are licensed under Apache-2.0 like the rest of this repository.
+
+patches/vllm/spintare-addback.patch modifies vLLM (https://github.com/vllm-project/vllm), Copyright the vLLM project
+contributors, licensed under the Apache License 2.0.
+
+The RULER data come from NVIDIA RULER's own generator, which is called but not included; it is used under its own
+license.
+
+data/*.txt: data/pg19_text*.txt are Project Gutenberg book texts (PG19, public domain); the other texts are
+concatenations of contexts from the LongBench benchmark (THUDM/LongBench), used for calibration and evaluation only;
+see data/README.md.
