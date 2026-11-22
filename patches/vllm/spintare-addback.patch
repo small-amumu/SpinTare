@@ -1,0 +1,401 @@
+diff --git a/vllm/v1/attention/backends/triton_attn.py b/vllm/v1/attention/backends/triton_attn.py
+index 491a7a3521..22d581e2ba 100644
+--- a/vllm/v1/attention/backends/triton_attn.py
++++ b/vllm/v1/attention/backends/triton_attn.py
+@@ -744,10 +744,20 @@ class TritonAttentionImpl(AttentionImpl):
+             mm_prefix_clamp_sliding_window=getattr(
+                 layer, "mm_prefix_clamp_sliding_window", False
+             ),
++            mu_addback=self.mu_addback_args(layer, query[:num_actual_tokens]),
+         )
+ 
+         return output
+ 
++    def mu_addback_args(self, layer: torch.nn.Module, query: torch.Tensor):
++        """Rotary-centring add-back arguments for unified_attention, or None.
++
++        Subclasses that write centred keys (RoPE(k - mu)) into a
++        per-token-head cache return (mu_q, mu, mu_tab, softmax_scale); see
++        `unified_attention`. The base backend never centres keys.
++        """
++        return None
++
+     def _pth_key_value_caches(
+         self, kv_cache: torch.Tensor
+     ) -> tuple[torch.Tensor, torch.Tensor]:
+diff --git a/vllm/v1/attention/ops/int4_per_token_head.py b/vllm/v1/attention/ops/int4_per_token_head.py
+index b9a3b3a259..fb4d2de592 100644
+--- a/vllm/v1/attention/ops/int4_per_token_head.py
++++ b/vllm/v1/attention/ops/int4_per_token_head.py
+@@ -31,7 +31,12 @@ from vllm.v1.attention.ops.triton_attention_helpers import (
+     softmax_step,
+     store_segm_reduce_scalars,
+ )
+-from vllm.v1.attention.ops.triton_unified_attention import reduce_segments
++from vllm.v1.attention.ops.triton_unified_attention import (
++    _mu_addback_prologue,
++    _mu_addback_tile,
++    mu_addback_kernel_args,
++    reduce_segments,
++)
+ 
+ float8_info = torch.finfo(current_platform.fp8_dtype())
+ 
+@@ -386,6 +391,16 @@ def _attn_packed(
+     PACKING_FACTOR: tl.constexpr,
+     FP8_MIN: tl.constexpr = float8_info.min,
+     FP8_MAX: tl.constexpr = float8_info.max,
++    # Rotary-centring add-back: see kernel_unified_attention. mu_q is the
++    # query before the RHT (the add-back term lives in the unrotated basis).
++    MU_ADDBACK: tl.constexpr = False,
++    mu_q_ptr=None,
++    mu_q_stride_0: int | None = None,
++    mu_q_stride_1: int | None = None,
++    mu_ptr=None,
++    mu_tab_ptr=None,
++    mu_bias_scale=1.0,
++    MU_VARIANT: tl.constexpr = 0,
+ ):
+     # Shared prologue: sequence lookup, q-block bounds, early returns.
+     q_block_global_idx = tl.program_id(0)
+@@ -452,6 +467,22 @@ def _attn_packed(
+     # INT4 asymmetric correction needs sum(Q) per row.
+     Q_sum = tl.sum(Q_s0, axis=1) + tl.sum(Q_s1, axis=1)
+ 
++    if MU_ADDBACK:
++        (mu_A, mu_B, mu_C, mu_S, offs_h) = _mu_addback_prologue(
++            mu_q_ptr,
++            mu_q_stride_0,
++            mu_q_stride_1,
++            mu_ptr,
++            mu_tab_ptr,
++            query_offset_0,
++            query_offset_1,
++            query_mask_0,
++            query_mask_1,
++            kv_head_idx,
++            offs_t,
++            HEAD_SIZE,
++        )
++
+     block_table_offset = seq_idx * block_table_stride
+ 
+     # Online-softmax state + optional feature loads.
+@@ -549,6 +580,11 @@ def _attn_packed(
+         ks_bits = ks_raw.to(tl.int32, bitcast=True)
+         k_zp = (ks_bits & 0xF).to(tl.float32)
+         k_token_head_scales = (ks_bits & -16).to(tl.float32, bitcast=True)
++        if MU_ADDBACK:
++            # the sign bit marks a key stored uncentred (the zero point in the
++            # low mantissa bits is untouched by the sign)
++            mu_exempt = k_token_head_scales < 0
++            k_token_head_scales = tl.abs(k_token_head_scales)
+         vs_bits = vs_raw.to(tl.int32, bitcast=True)
+         v_zp = (vs_bits & 0xF).to(tl.float32)
+         v_token_head_scales = (vs_bits & -16).to(tl.float32, bitcast=True)
+@@ -573,6 +609,21 @@ def _attn_packed(
+         S += (raw_dot - Q_sum[:, None] * k_zp[None, :]) * (
+             scale * k_token_head_scales[None, :]
+         )
++        if MU_ADDBACK:
++            S += _mu_addback_tile(
++                mu_A,
++                mu_B,
++                mu_C,
++                mu_S,
++                offs_h,
++                mu_tab_ptr,
++                j * TILE_SIZE,
++                mu_exempt,
++                mu_bias_scale,
++                HEAD_SIZE,
++                offs_t,
++                MU_VARIANT,
++            )
+ 
+         if USE_SOFTCAP:
+             S = apply_softcap(S, softcap)
+@@ -693,6 +744,7 @@ def _launch_packed_attn(
+     softmax_segm_max,
+     softmax_segm_expsum,
+     packing_factor: int,
++    mu_addback=None,
+ ):
+     """Launch `_attn_packed` for one of the sub-byte modes.
+ 
+@@ -823,6 +875,7 @@ def _launch_packed_attn(
+         USE_FP8=output_scale is not None,
+         IS_3D=use_3d,
+         PACKING_FACTOR=packing_factor,
++        **mu_addback_kernel_args(mu_addback, q, True),
+     )
+ 
+     if use_3d:
+@@ -906,6 +959,7 @@ def unified_attention_int4(
+     softmax_segm_output: torch.Tensor | None = None,
+     softmax_segm_max: torch.Tensor | None = None,
+     softmax_segm_expsum: torch.Tensor | None = None,
++    mu_addback=None,
+ ) -> None:
+     """Paged attention over the INT4 packed cache, writing into *out*.
+ 
+@@ -945,6 +999,7 @@ def unified_attention_int4(
+         softmax_segm_max=softmax_segm_max,
+         softmax_segm_expsum=softmax_segm_expsum,
+         packing_factor=_INT4_PACKING_FACTOR,
++        mu_addback=mu_addback,
+     )
+ 
+     out_f = single_rht(out.float(), inverse=True) / rht_norm
+diff --git a/vllm/v1/attention/ops/triton_unified_attention.py b/vllm/v1/attention/ops/triton_unified_attention.py
+index bfad5ffa69..eab128a7b8 100644
+--- a/vllm/v1/attention/ops/triton_unified_attention.py
++++ b/vllm/v1/attention/ops/triton_unified_attention.py
+@@ -9,6 +9,8 @@
+ 
+ from typing import Any
+ 
++import os
++
+ import torch
+ 
+ import vllm.envs as envs
+@@ -291,6 +293,90 @@ def _store_output_td(
+     )
+ 
+ 
++@triton.jit
++def _mu_addback_prologue(
++    mu_q_ptr,
++    mu_q_stride_0,
++    mu_q_stride_1,
++    mu_ptr,
++    mu_tab_ptr,
++    query_offset_0,
++    query_offset_1,
++    query_mask_0,
++    query_mask_1,
++    kv_head_idx,
++    offs_t,
++    HEAD_SIZE: tl.constexpr,
++):
++    """Per-program constants of the rotary-centring add-back.
++
++    q . R(p) mu = sum_j A_j cos(p theta_j) + B_j sin(p theta_j) with
++    A_j = q_j mu_j + q_{j+h} mu_{j+h}, B_j = q_{j+h} mu_j - q_j mu_{j+h}
++    (h = HEAD_SIZE / 2, NeoX pairs). Returns A, B (BLOCK_M, h) in fp32, the
++    (TILE_SIZE, h) cos / sin of i theta_j for tile offsets i, and offs_h.
++    """
++    HALF: tl.constexpr = HEAD_SIZE // 2
++    offs_h = tl.arange(0, HALF)
++    q_base = (
++        query_offset_0[:, None].to(tl.int64) * mu_q_stride_0
++        + query_offset_1[:, None] * mu_q_stride_1
++    )
++    q_mask = query_mask_0[:, None] & query_mask_1[:, None]
++    q_lo = tl.load(mu_q_ptr + q_base + offs_h[None, :], mask=q_mask, other=0.0)
++    q_hi = tl.load(mu_q_ptr + q_base + HALF + offs_h[None, :], mask=q_mask, other=0.0)
++    q_lo = q_lo.to(tl.float32)
++    q_hi = q_hi.to(tl.float32)
++    mu_lo = tl.load(mu_ptr + kv_head_idx * HEAD_SIZE + offs_h)
++    mu_hi = tl.load(mu_ptr + kv_head_idx * HEAD_SIZE + HALF + offs_h)
++    mu_A = q_lo * mu_lo[None, :] + q_hi * mu_hi[None, :]
++    mu_B = q_hi * mu_lo[None, :] - q_lo * mu_hi[None, :]
++    tab = offs_t[:, None] * HEAD_SIZE + offs_h[None, :]
++    mu_C = tl.load(mu_tab_ptr + tab)
++    mu_S = tl.load(mu_tab_ptr + tab + HALF)
++    return mu_A, mu_B, mu_C, mu_S, offs_h
++
++
++@triton.jit
++def _mu_addback_tile(
++    mu_A,
++    mu_B,
++    mu_C,
++    mu_S,
++    offs_h,
++    mu_tab_ptr,
++    p0,
++    mu_exempt,
++    mu_bias_scale,
++    HEAD_SIZE: tl.constexpr,
++    offs_t=None,
++    MU_VARIANT: tl.constexpr = 0,
++):
++    """Scaled q . R(p) mu for the tile of keys at positions p0 + i, shape
++    (BLOCK_M, TILE_SIZE); zero for keys stored uncentred. Angle addition from
++    the table row p0: A' = A cos(p0 t) + B sin(p0 t), B' = B cos(p0 t) -
++    A sin(p0 t), bias_i = A' . cos(i t) + B' . sin(i t). The dots run in fp32
++    FMA ("ieee"): the term is large when |mu| is, and TF32 would lose it.
++    MU_VARIANT (PFX1 experiment): bit 0 = tf32x3 dots instead of ieee; bit 1 =
++    reload the tile-offset cos / sin rows here instead of keeping them live in
++    registers across the KV loop."""
++    HALF: tl.constexpr = HEAD_SIZE // 2
++    if MU_VARIANT >= 2:
++        tab = offs_t[:, None] * HEAD_SIZE + offs_h[None, :]
++        mu_C = tl.load(mu_tab_ptr + tab)
++        mu_S = tl.load(mu_tab_ptr + tab + HALF)
++    c0 = tl.load(mu_tab_ptr + p0 * HEAD_SIZE + offs_h)
++    s0 = tl.load(mu_tab_ptr + p0 * HEAD_SIZE + HALF + offs_h)
++    a_t = mu_A * c0[None, :] + mu_B * s0[None, :]
++    b_t = mu_B * c0[None, :] - mu_A * s0[None, :]
++    if MU_VARIANT % 2 == 1:
++        bias = tl.dot(a_t, tl.trans(mu_C), input_precision="tf32x3")
++        bias += tl.dot(b_t, tl.trans(mu_S), input_precision="tf32x3")
++    else:
++        bias = tl.dot(a_t, tl.trans(mu_C), input_precision="ieee")
++        bias += tl.dot(b_t, tl.trans(mu_S), input_precision="ieee")
++    return tl.where(mu_exempt[None, :], 0.0, bias * mu_bias_scale)
++
++
+ @triton.jit
+ def kernel_unified_attention(
+     # Output destination for the 2D path.  In 3D mode per-segment partials
+@@ -405,6 +491,21 @@ def kernel_unified_attention(
+     # instead of letting them override it. Default False preserves the
+     # original (causal AND SW) OR mm_prefix behavior for all other models.
+     MM_PREFIX_CLAMP_SW: tl.constexpr = False,
++    # Rotary-centring add-back (per-token-head modes only). The cache holds
++    # RoPE(k - mu) = RoPE(k) - R(p) mu for every key whose per-(token, head)
++    # K scale is positive; a negative K scale marks a key stored uncentred
++    # (sink gate). Every centred key's score gets q . R(p) mu back, computed
++    # from the unrotated query (mu_q), mu of the KV head (mu, fp32
++    # [num_kv_heads, HEAD_SIZE]) and an fp32 [max_pos, HEAD_SIZE] table of
++    # [cos(p theta_j) | sin(p theta_j)] (NeoX pairs j, j + HEAD_SIZE / 2).
++    MU_ADDBACK: tl.constexpr = False,
++    mu_q_ptr=None,
++    mu_q_stride_0: int | None = None,
++    mu_q_stride_1: int | None = None,
++    mu_ptr=None,
++    mu_tab_ptr=None,
++    mu_bias_scale=1.0,
++    MU_VARIANT: tl.constexpr = 0,
+ ):
+     # Per-(token, head) scale caches: used iff KV_QUANT_MODE in {2, 3}.
+     USE_PER_TOKEN_HEAD_SCALES: tl.constexpr = (KV_QUANT_MODE >= 2) and (
+@@ -490,6 +591,22 @@ def kernel_unified_attention(
+ 
+     block_table_offset = seq_idx * block_table_stride
+ 
++    if MU_ADDBACK:
++        (mu_A, mu_B, mu_C, mu_S, offs_h) = _mu_addback_prologue(
++            mu_q_ptr,
++            mu_q_stride_0,
++            mu_q_stride_1,
++            mu_ptr,
++            mu_tab_ptr,
++            query_offset_0,
++            query_offset_1,
++            query_mask_0,
++            query_mask_1,
++            kv_head_idx,
++            offs_t,
++            HEAD_SIZE,
++        )
++
+     M = init_softmax_M(
+         sink_ptr, query_offset_1, query_mask_1, segm_idx, BLOCK_M, USE_SINKS, IS_3D
+     )
+@@ -623,6 +740,9 @@ def kernel_unified_attention(
+             k_token_head_scales = tl.load(
+                 k_scale_cache_ptr + scale_idx, mask=tile_mask, other=1.0
+             )
++            if MU_ADDBACK:
++                mu_exempt = k_token_head_scales < 0
++                k_token_head_scales = tl.abs(k_token_head_scales)
+             v_scale_idx = (
+                 physical_block_idx * stride_vs_blk
+                 + (seq_offset % BLOCK_SIZE) * stride_vs_slot
+@@ -662,6 +782,22 @@ def kernel_unified_attention(
+         else:
+             S += score_scale * tl.dot(Q, K)
+ 
++        if MU_ADDBACK:
++            S += _mu_addback_tile(
++                mu_A,
++                mu_B,
++                mu_C,
++                mu_S,
++                offs_h,
++                mu_tab_ptr,
++                j * TILE_SIZE,
++                mu_exempt,
++                mu_bias_scale,
++                HEAD_SIZE,
++                offs_t,
++                MU_VARIANT,
++            )
++
+         if USE_SOFTCAP:
+             S = apply_softcap(S, softcap)
+ 
+@@ -939,6 +1075,33 @@ def _get_tile_size(
+     return 16 if element_size >= 2 else 32
+ 
+ 
++def mu_addback_kernel_args(mu_addback, q, per_token_head: bool) -> dict:
++    """Kernel keyword arguments of the rotary-centring add-back; an empty
++    dict when it is off, so the default (constexpr False) path is unchanged."""
++    if mu_addback is None:
++        return {}
++    mu_q, mu, mu_tab, mu_bias_scale = mu_addback
++    head_size = q.shape[2]
++    assert per_token_head, "mu add-back needs a per-token-head KV cache"
++    assert head_size == triton.next_power_of_2(head_size), "head size 2^n"
++    assert mu_q.shape == q.shape and mu_q.stride(2) == 1
++    assert mu.dtype == torch.float32 and mu.is_contiguous()
++    assert mu.shape[1] == head_size and q.shape[1] % mu.shape[0] == 0
++    assert mu_tab.dtype == torch.float32 and mu_tab.is_contiguous()
++    assert mu_tab.shape[1] == head_size
++    return dict(
++        MU_ADDBACK=True,
++        mu_q_ptr=mu_q,
++        mu_q_stride_0=mu_q.stride(0),
++        mu_q_stride_1=mu_q.stride(1),
++        mu_ptr=mu,
++        mu_tab_ptr=mu_tab,
++        mu_bias_scale=float(mu_bias_scale),
++        # PFX1 experiment switch (default 0 = the registered VP2 kernel)
++        MU_VARIANT=int(os.environ.get("SPINTARE_AB_VARIANT", "0")),
++    )
++
++
+ def unified_attention(
+     q,
+     k,
+@@ -987,6 +1150,11 @@ def unified_attention(
+     # Gemma4: clamp mm_prefix bidirectional ranges by the sliding window.
+     # Default False keeps the original behavior for every other model.
+     mm_prefix_clamp_sliding_window: bool = False,
++    # Rotary-centring add-back: (mu_q, mu, mu_tab, mu_bias_scale) or None.
++    # mu_q: the unrotated query [num_tokens, num_heads, head_size]; mu: fp32
++    # [num_kv_heads, head_size]; mu_tab: fp32 [max_pos, head_size] =
++    # [cos | sin] of p theta_j; mu_bias_scale: the softmax scale.
++    mu_addback=None,
+ ):
+     # Resolve causal: bool or per-seq tensor.
+     use_per_seq_causal = isinstance(causal, torch.Tensor)
+@@ -1031,6 +1199,7 @@ def unified_attention(
+             softmax_segm_output=softmax_segm_output,
+             softmax_segm_max=softmax_segm_max,
+             softmax_segm_expsum=softmax_segm_expsum,
++            mu_addback=mu_addback,
+         )
+         return
+ 
+@@ -1045,6 +1214,7 @@ def unified_attention(
+         assert k_scale_cache is not None and v_scale_cache is not None, (
+             f"{kv_quant_mode.name} requires k_scale_cache / v_scale_cache"
+         )
++    mu_args = mu_addback_kernel_args(mu_addback, q, use_per_token_head_scales)
+ 
+     use_mm_prefix = False
+     max_mm_ranges = 0
+@@ -1477,6 +1647,7 @@ def unified_attention(
+         USE_TD=use_td,
+         USE_TD_QO=use_td_qo,
+         MM_PREFIX_CLAMP_SW=mm_prefix_clamp_sliding_window,
++        **mu_args,
+         **launch_kwargs,
+     )
+ 

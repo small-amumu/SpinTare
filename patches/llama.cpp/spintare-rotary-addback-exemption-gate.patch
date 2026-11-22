@@ -1,0 +1,2995 @@
+SpinTare repair for llama.cpp, against ggml-org/llama.cpp 3bb63cbcbfb62056c84fe9e521b0f3d756d29c32.
+
+Rotary centring with exact add-back: K is cached as R(p)(k - mu) and every score gets q . R(p) mu back,
+computed from the position inside the flash-attention decode kernel (LLAMA_KV_DEBIAS_MU=<mu file>,
+LLAMA_KV_DEBIAS_MU_PATH=kqpos); prefill adds R(p) mu to the dequantized keys.
+Exemption gate (LLAMA_KV_MU_GATE=1): rows with z = 1 - k.mu / |mu|^2 >= 0.5 are cached uncentred and
+flagged (F32 flag per cell and KV head); fused write path GGML_OP_KV_MU_GATE. The code comments call it
+the sink gate (SG1 / SG2); the paper calls it the exemption gate.
+With no switch set, every graph follows the upstream path.
+
+Apply: git -C <llama.cpp at 3bb63cb> apply <this file>   (scripts/build_llama_cpp.sh does this)
+
+diff --git a/ggml/include/ggml.h b/ggml/include/ggml.h
+--- a/ggml/include/ggml.h
++++ b/ggml/include/ggml.h
+@@ -585,6 +585,8 @@
+         GGML_OP_DSV4_HC_COMB,
+         GGML_OP_DSV4_HC_PRE,
+         GGML_OP_DSV4_HC_POST,
++        GGML_OP_KQ_ROPE_BIAS,
++        GGML_OP_KV_MU_GATE,
+ 
+         GGML_OP_UNARY,
+ 
+@@ -2517,6 +2519,13 @@
+             struct ggml_tensor * a,
+             struct ggml_tensor * sinks);
+ 
++    // Optional per-head additive KQ bias, added to each raw q.k score before scaling and softcap:
++    //   kq[i, j, h, s] += kq_bias[i, j, h, s]
++    // kq_bias: [n_kv, n_batch, n_head, ne3] F32, rows contiguous (may be a permuted view)
++    GGML_API void ggml_flash_attn_ext_add_kq_bias(
++            struct ggml_tensor * a,
++            struct ggml_tensor * kq_bias);
++
+     // TODO: needs to be adapted to ggml_flash_attn_ext
+     GGML_API struct ggml_tensor * ggml_flash_attn_back(
+            struct ggml_context * ctx,
+@@ -2732,6 +2741,66 @@
+             struct ggml_tensor  * post,
+             struct ggml_tensor  * comb);
+ 
++    // KQ bias of a constant key bias b rotated by a pair-wise rotation given as a coefficient table c
++    // (NEOX pairing: dimension j pairs with j + D/2):
++    //   res[p, t, h, s] = scale * sum_{j < D/2} (A_j c[p, j, 0, s] + B_j c[p, j + D/2, 0, s])
++    //   A_j = q_j b_j + q_{j+D/2} b_{j+D/2},  B_j = q_{j+D/2} b_j - q_j b_{j+D/2}
++    //   with q = q[:, h, t, s] and b = b[:, h / (n_head/n_head_kv)]
++    // with c[p, j] = cos(p theta_j) - 1 and c[p, j + D/2] = sin(p theta_j) this is q . R(p) b up to a constant per query
++    //
++    // q:   [D,    n_head,    n_tokens, ne3] F32
++    // b:   [D,    n_head_kv, 1,        1  ] F32
++    // c:   [n_kv, D,         1,        ne3 or 1] F32 or F16 (one row per dimension, keys contiguous)
++    // res: [n_kv, n_tokens,  n_head,   ne3] F32
++    //
++    GGML_API struct ggml_tensor * ggml_kq_rope_bias(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * q,
++            struct ggml_tensor  * b,
++            struct ggml_tensor  * c,
++            float                 scale);
++
++    // the same with c evaluated from the positions of the keys (no table):
++    //   c[p, j] = cos(theta) - 1, c[p, j + D/2] = sin(theta), theta = freq_scale * (pos[p] * theta_scale^j),
++    //   theta_scale = freq_base^(-2/D), as NEOX rope over the whole head without freq factors or YaRN
++    // pos: [n_kv] I32
++    GGML_API struct ggml_tensor * ggml_kq_rope_bias_pos(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * q,
++            struct ggml_tensor  * b,
++            struct ggml_tensor  * pos,
++            float                 freq_base,
++            float                 freq_scale,
++            float                 scale);
++
++    // the same with a gate per (key, KV head): gate [n_head_kv, n_kv] F32, 1 = centred key, 0 = exempt key; an exempt
++    // key gets -scale * sum_{j < D/2} A_j, the per-query constant the bias drops for every key (sink exemption, SG1)
++    // SG2 sink gate write path (one op, two modes)
++    //   ggml_kv_mu_gate:  k [D, H, T] F32 (pre-RoPE), mu [D, H], half [1, H] = |mu|^2/2 -> g [1, H, T] F32,
++    //                     g = (sum_i k_i mu_i - half) > 0; force: -1 rule, 1 all centred, 0 all exempt
++    //   ggml_kv_mu_apply: k [D, H, T], mu [D, H], g [1, H, T] -> k - mu * g [D, H, T]
++    GGML_API struct ggml_tensor * ggml_kv_mu_gate(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * k,
++            struct ggml_tensor  * mu,
++            struct ggml_tensor  * half,
++            int                   force);
++    GGML_API struct ggml_tensor * ggml_kv_mu_apply(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * k,
++            struct ggml_tensor  * mu,
++            struct ggml_tensor  * g);
++
++    GGML_API struct ggml_tensor * ggml_kq_rope_bias_pos_gated(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * q,
++            struct ggml_tensor  * b,
++            struct ggml_tensor  * pos,
++            struct ggml_tensor  * gate,
++            float                 freq_base,
++            float                 freq_scale,
++            float                 scale);
++
+     // custom operators
+ 
+     typedef void (*ggml_custom1_op_t)(struct ggml_tensor * dst , const struct ggml_tensor * a, int ith, int nth, void * userdata);
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -773,6 +773,13 @@
+ 
+ bool ggml_backend_dev_supports_op(ggml_backend_dev_t device, const struct ggml_tensor * op) {
+     GGML_ASSERT(device);
++    // the optional per-head KQ bias of FLASH_ATTN_EXT (src[5]) is only implemented by the CPU and CUDA backends
++    if (op->op == GGML_OP_FLASH_ATTN_EXT && op->src[5] != NULL) {
++        const char * reg_name = ggml_backend_reg_name(ggml_backend_dev_backend_reg(device));
++        if (strcmp(reg_name, "CPU") != 0 && strcmp(reg_name, "CUDA") != 0) {
++            return false;
++        }
++    }
+     return device->iface.supports_op(device, op);
+ }
+ 
+diff --git a/ggml/src/ggml.c b/ggml/src/ggml.c
+--- a/ggml/src/ggml.c
++++ b/ggml/src/ggml.c
+@@ -1095,6 +1095,8 @@
+     "DSV4_HC_COMB",
+     "DSV4_HC_PRE",
+     "DSV4_HC_POST",
++    "KQ_ROPE_BIAS",
++    "KV_MU_GATE",
+ 
+     "UNARY",
+ 
+@@ -1112,7 +1114,7 @@
+     "GLU",
+ };
+ 
+-static_assert(GGML_OP_COUNT == 101, "GGML_OP_COUNT != 101");
++static_assert(GGML_OP_COUNT == 103, "GGML_OP_COUNT != 103");
+ 
+ static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
+     "none",
+@@ -1210,6 +1212,8 @@
+     "dsv4_hc_comb(mixes, scale, base)",
+     "dsv4_hc_pre(x, weights)",
+     "dsv4_hc_post(x, residual, post, comb)",
++    "kq_rope_bias(q, b, c)",
++    "kv_mu_gate(k, mu, x)",
+ 
+     "unary(x)",
+ 
+@@ -1227,7 +1231,7 @@
+     "glu(x)",
+ };
+ 
+-static_assert(GGML_OP_COUNT == 101, "GGML_OP_COUNT != 101");
++static_assert(GGML_OP_COUNT == 103, "GGML_OP_COUNT != 103");
+ 
+ static_assert(GGML_OP_POOL_COUNT == 2, "GGML_OP_POOL_COUNT != 2");
+ 
+@@ -5605,6 +5609,25 @@
+     a->src[4] = sinks;
+ }
+ 
++void ggml_flash_attn_ext_add_kq_bias(
++        struct ggml_tensor * a,
++        struct ggml_tensor * kq_bias) {
++    GGML_ASSERT(a->op == GGML_OP_FLASH_ATTN_EXT);
++    GGML_ASSERT(a->src[5] == NULL);
++    if (!kq_bias) {
++        return;
++    }
++
++    const struct ggml_tensor * q = a->src[0];
++    const struct ggml_tensor * k = a->src[1];
++    GGML_ASSERT(kq_bias->type == GGML_TYPE_F32);
++    GGML_ASSERT(kq_bias->ne[0] == k->ne[1]);
++    GGML_ASSERT(kq_bias->ne[1] == q->ne[1] && kq_bias->ne[2] == q->ne[2] && kq_bias->ne[3] == q->ne[3]);
++    GGML_ASSERT(kq_bias->nb[0] == sizeof(float));
++
++    a->src[5] = kq_bias;
++}
++
+ // ggml_flash_attn_back
+ 
+ struct ggml_tensor * ggml_flash_attn_back(
+@@ -6630,6 +6653,128 @@
+     return result;
+ }
+ 
++// ggml_kq_rope_bias
++
++struct ggml_tensor * ggml_kq_rope_bias(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * q,
++        struct ggml_tensor  * b,
++        struct ggml_tensor  * c,
++        float                 scale) {
++    GGML_ASSERT(q->type == GGML_TYPE_F32);
++    GGML_ASSERT(b->type == GGML_TYPE_F32);
++    GGML_ASSERT(c->type == GGML_TYPE_F32 || c->type == GGML_TYPE_F16);
++    GGML_ASSERT(q->ne[0] % 2 == 0);
++    GGML_ASSERT(b->ne[0] == q->ne[0] && c->ne[1] == q->ne[0]);
++    GGML_ASSERT(q->ne[1] % b->ne[1] == 0);
++    GGML_ASSERT(b->ne[2] == 1 && b->ne[3] == 1);
++    GGML_ASSERT(c->ne[2] == 1 && q->ne[3] % c->ne[3] == 0);
++    GGML_ASSERT(q->nb[0] == ggml_type_size(q->type));
++    GGML_ASSERT(b->nb[0] == ggml_type_size(b->type));
++    GGML_ASSERT(c->nb[0] == ggml_type_size(c->type));
++
++    const int64_t ne[4] = { c->ne[0], q->ne[2], q->ne[1], q->ne[3] };
++    struct ggml_tensor * result = ggml_new_tensor(ctx, GGML_TYPE_F32, 4, ne);
++
++    ggml_set_op_params_f32(result, 0, scale);
++
++    result->op     = GGML_OP_KQ_ROPE_BIAS;
++    result->src[0] = q;
++    result->src[1] = b;
++    result->src[2] = c;
++
++    return result;
++}
++
++struct ggml_tensor * ggml_kq_rope_bias_pos(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * q,
++        struct ggml_tensor  * b,
++        struct ggml_tensor  * pos,
++        float                 freq_base,
++        float                 freq_scale,
++        float                 scale) {
++    GGML_ASSERT(q->type == GGML_TYPE_F32);
++    GGML_ASSERT(b->type == GGML_TYPE_F32);
++    GGML_ASSERT(pos->type == GGML_TYPE_I32 && ggml_is_vector(pos) && ggml_is_contiguous(pos));
++    GGML_ASSERT(q->ne[0] % 2 == 0);
++    GGML_ASSERT(b->ne[0] == q->ne[0]);
++    GGML_ASSERT(q->ne[1] % b->ne[1] == 0);
++    GGML_ASSERT(b->ne[2] == 1 && b->ne[3] == 1);
++    GGML_ASSERT(q->nb[0] == ggml_type_size(q->type));
++    GGML_ASSERT(b->nb[0] == ggml_type_size(b->type));
++
++    const int64_t ne[4] = { pos->ne[0], q->ne[2], q->ne[1], q->ne[3] };
++    struct ggml_tensor * result = ggml_new_tensor(ctx, GGML_TYPE_F32, 4, ne);
++
++    // theta_scale on the host with powf, as the CUDA rope launcher computes it
++    const float theta_scale = powf(freq_base, -2.0f/(float) q->ne[0]);
++    ggml_set_op_params_f32(result, 0, scale);
++    ggml_set_op_params_f32(result, 1, theta_scale);
++    ggml_set_op_params_f32(result, 2, freq_scale);
++
++    result->op     = GGML_OP_KQ_ROPE_BIAS;
++    result->src[0] = q;
++    result->src[1] = b;
++    result->src[2] = pos;
++
++    return result;
++}
++
++struct ggml_tensor * ggml_kv_mu_gate(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * k,
++        struct ggml_tensor  * mu,
++        struct ggml_tensor  * half,
++        int                   force) {
++    GGML_ASSERT(k->type == GGML_TYPE_F32 && mu->type == GGML_TYPE_F32 && half->type == GGML_TYPE_F32);
++    GGML_ASSERT(mu->ne[0] == k->ne[0] && mu->ne[1] == k->ne[1] && ggml_is_contiguous(mu) && ggml_nrows(mu) == mu->ne[1]);
++    GGML_ASSERT(half->ne[0] == 1 && half->ne[1] == k->ne[1] && ggml_is_contiguous(half));
++    GGML_ASSERT(k->ne[3] == 1 && k->nb[0] == sizeof(float));
++    struct ggml_tensor * result = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, k->ne[1], k->ne[2]);
++    ggml_set_op_params_i32(result, 0, 0);     // mode 0: gate
++    ggml_set_op_params_i32(result, 1, force); // -1 rule, 1 centre, 0 exempt
++    result->op     = GGML_OP_KV_MU_GATE;
++    result->src[0] = k;
++    result->src[1] = mu;
++    result->src[2] = half;
++    return result;
++}
++
++struct ggml_tensor * ggml_kv_mu_apply(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * k,
++        struct ggml_tensor  * mu,
++        struct ggml_tensor  * g) {
++    GGML_ASSERT(k->type == GGML_TYPE_F32 && mu->type == GGML_TYPE_F32 && g->type == GGML_TYPE_F32);
++    GGML_ASSERT(mu->ne[0] == k->ne[0] && mu->ne[1] == k->ne[1] && ggml_is_contiguous(mu) && ggml_nrows(mu) == mu->ne[1]);
++    GGML_ASSERT(g->ne[0] == 1 && g->ne[1] == k->ne[1] && g->ne[2] == k->ne[2] && ggml_is_contiguous(g));
++    GGML_ASSERT(k->ne[3] == 1 && k->nb[0] == sizeof(float));
++    struct ggml_tensor * result = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, k->ne[0], k->ne[1], k->ne[2]);
++    ggml_set_op_params_i32(result, 0, 1);     // mode 1: apply
++    result->op     = GGML_OP_KV_MU_GATE;
++    result->src[0] = k;
++    result->src[1] = mu;
++    result->src[2] = g;
++    return result;
++}
++
++struct ggml_tensor * ggml_kq_rope_bias_pos_gated(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * q,
++        struct ggml_tensor  * b,
++        struct ggml_tensor  * pos,
++        struct ggml_tensor  * gate,
++        float                 freq_base,
++        float                 freq_scale,
++        float                 scale) {
++    GGML_ASSERT(gate->type == GGML_TYPE_F32 && gate->nb[0] == sizeof(float));
++    GGML_ASSERT(gate->ne[0] == b->ne[1] && gate->ne[1] == pos->ne[0] && gate->ne[2] == 1 && gate->ne[3] == 1);
++    struct ggml_tensor * result = ggml_kq_rope_bias_pos(ctx, q, b, pos, freq_base, freq_scale, scale);
++    result->src[3] = gate;
++    return result;
++}
++
+ ////////////////////////////////////////////////////////////////////////////////
+ 
+ struct ggml_hash_set ggml_hash_set_new(size_t size) {
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -2105,6 +2105,14 @@
+             {
+                 ggml_compute_forward_dsv4_hc_post(params, tensor);
+             } break;
++        case GGML_OP_KQ_ROPE_BIAS:
++            {
++                ggml_compute_forward_kq_rope_bias(params, tensor);
++            } break;
++        case GGML_OP_KV_MU_GATE:
++            {
++                ggml_compute_forward_kv_mu_gate(params, tensor);
++            } break;
+         case GGML_OP_MAP_CUSTOM1:
+             {
+                 ggml_compute_forward_map_custom1(params, tensor);
+@@ -2288,6 +2296,8 @@
+         case GGML_OP_DSV4_HC_COMB:
+         case GGML_OP_DSV4_HC_PRE:
+         case GGML_OP_DSV4_HC_POST:
++        case GGML_OP_KQ_ROPE_BIAS:
++        case GGML_OP_KV_MU_GATE:
+             {
+                 n_tasks = n_threads;
+             } break;
+@@ -3039,6 +3049,12 @@
+                         const int64_t ne10 = node->src[1]->ne[0];
+                         cur += sizeof(float)*ne10*n_tasks;
+                     } break;
++                case GGML_OP_KQ_ROPE_BIAS:
++                    {
++                        // per thread: one block of c in F32 and u
++                        const int64_t D = node->src[0]->ne[0];
++                        cur = sizeof(float)*(D*GGML_KQ_ROPE_BIAS_CPU_CHUNK + D + CACHE_LINE_SIZE_F32)*n_tasks;
++                    } break;
+                 default:
+                     break;
+             }
+diff --git a/ggml/src/ggml-cpu/ops.cpp b/ggml/src/ggml-cpu/ops.cpp
+--- a/ggml/src/ggml-cpu/ops.cpp
++++ b/ggml/src/ggml-cpu/ops.cpp
+@@ -8943,6 +8943,7 @@
+     const ggml_tensor * v     = dst->src[2];
+     const ggml_tensor * mask  = dst->src[3];
+     const ggml_tensor * sinks = dst->src[4];
++    const ggml_tensor * kq_b  = dst->src[5]; // optional per-head additive KQ bias
+ 
+     GGML_TENSOR_LOCALS(int64_t, neq, q,   ne)
+     GGML_TENSOR_LOCALS(size_t,  nbq, q,   nb)
+@@ -9065,6 +9066,10 @@
+             const char * k_data = (const char *) k->data + ( ic*nbk1 + ik2*nbk2 + ik3*nbk3);
+             kq_vec_dot(DK, &s, 0, k_data, 0, Q_q, 0, 1);
+ 
++            if (kq_b) {
++                s += *(const float *) ((const char *) kq_b->data + ic*sizeof(float) + iq1*kq_b->nb[1] + iq2*kq_b->nb[2] + iq3*kq_b->nb[3]);
++            }
++
+             s = s*scale; // scale KQ value
+ 
+             if (logit_softcap != 0.0f) {
+@@ -9577,7 +9582,8 @@
+     const bool use_ref = params->use_ref;
+ 
+     const bool kv_is_f32_or_f16 = (k->type == GGML_TYPE_F32 || k->type == GGML_TYPE_F16);
+-    const bool use_split_kv_path = !use_ref && (neq1 == 1 && neq3 == 1) && kv_is_f32_or_f16 && (k->type == v->type) && q->type == GGML_TYPE_F32 && nek1 >= 512;
++    const bool has_kq_bias = dst->src[5] != nullptr; // only the one_chunk path applies the per-head KQ bias
++    const bool use_split_kv_path = !use_ref && !has_kq_bias && (neq1 == 1 && neq3 == 1) && kv_is_f32_or_f16 && (k->type == v->type) && q->type == GGML_TYPE_F32 && nek1 >= 512;
+ 
+     if (use_split_kv_path) {
+         const int64_t chunk_size = (nek1 + nth - 1) / nth;
+@@ -9634,7 +9640,7 @@
+         const int64_t dr = (nr + nchunk - 1) / nchunk;
+ 
+         static constexpr int64_t Q_TILE_SZ  = ggml_fa_tile_config::Q;
+-        bool use_tiled = !use_ref &&
++        bool use_tiled = !use_ref && !has_kq_bias &&
+                                (q->type == GGML_TYPE_F32 &&
+                                 kv_is_f32_or_f16 &&
+                                 k->type == v->type &&
+@@ -12522,4 +12528,149 @@
+             }
+         }
+     }
++}
++
++// ggml_compute_forward_kv_mu_gate (SG2)
++
++void ggml_compute_forward_kv_mu_gate(
++        const ggml_compute_params * params,
++        ggml_tensor * dst) {
++    const ggml_tensor * k  = dst->src[0];
++    const ggml_tensor * mu = dst->src[1];
++    const ggml_tensor * x  = dst->src[2];
++    const int mode  = ggml_get_op_params_i32(dst, 0);
++    const int force = ggml_get_op_params_i32(dst, 1);
++    const int64_t D = k->ne[0], H = k->ne[1], T = k->ne[2];
++    const float * mud = (const float *) mu->data;
++    const float * xd  = (const float *) x->data;
++    float * out = (float *) dst->data;
++    for (int64_t r = params->ith; r < H*T; r += params->nth) {
++        const int64_t h = r % H, t = r / H;
++        const float * kr = (const float *) ((const char *) k->data + h*k->nb[1] + t*k->nb[2]);
++        const float * mr = mud + h*D;
++        if (mode == 0) {
++            float g;
++            if (force < 0) {
++                float dot = 0.0f;
++                for (int64_t i = 0; i < D; ++i) {
++                    dot += kr[i]*mr[i];
++                }
++                g = (dot - xd[h]) > 0.0f ? 1.0f : 0.0f;
++            } else {
++                g = force ? 1.0f : 0.0f;
++            }
++            out[h + t*H] = g;
++        } else {
++            const float g = xd[h + t*H];
++            float * o = out + (h + t*H)*D;
++            for (int64_t i = 0; i < D; ++i) {
++                o[i] = kr[i] - mr[i]*g;
++            }
++        }
++    }
++}
++
++// ggml_compute_forward_kq_rope_bias
++
++void ggml_compute_forward_kq_rope_bias(
++        const ggml_compute_params * params,
++        ggml_tensor * dst) {
++
++    const ggml_tensor * q = dst->src[0];
++    const ggml_tensor * b = dst->src[1];
++    const ggml_tensor * c = dst->src[2];
++
++    GGML_ASSERT(dst->type == GGML_TYPE_F32);
++    GGML_ASSERT(  q->type == GGML_TYPE_F32);
++    GGML_ASSERT(  b->type == GGML_TYPE_F32);
++    GGML_ASSERT(  c->type == GGML_TYPE_F32 || c->type == GGML_TYPE_F16 || c->type == GGML_TYPE_I32);
++
++    GGML_TENSOR_LOCALS(int64_t, neq, q, ne)
++    GGML_TENSOR_LOCALS(size_t,  nbq, q, nb)
++    GGML_TENSOR_LOCALS(size_t,  nbb, b, nb)
++    GGML_TENSOR_LOCALS(int64_t, nec, c, ne)
++    GGML_TENSOR_LOCALS(size_t,  nbc, c, nb)
++    GGML_TENSOR_LOCALS(size_t,  nb, dst, nb)
++
++    GGML_ASSERT(nb0 == sizeof(float));
++
++    constexpr int64_t CH = GGML_KQ_ROPE_BIAS_CPU_CHUNK;
++
++    const int64_t D     = neq0;
++    const int64_t half  = D/2;
++    const int64_t n_kv  = nec0;
++    const int64_t gqa   = neq1/b->ne[1];
++    const float   scale = ggml_get_op_params_f32(dst, 0);
++
++    const int ith = params->ith;
++    const int nth = params->nth;
++
++    // per thread: one block of c converted to F32 ([D][CH]) and u ([D])
++    float * cf = (float *) params->wdata + ith*(D*CH + D + CACHE_LINE_SIZE_F32);
++    float * u  = cf + D*CH;
++
++    // blocks of CH keys, per stream
++    const int64_t nchunk = (n_kv + CH - 1)/CH;
++
++    for (int64_t blk = ith; blk < nchunk*neq3; blk += nth) {
++        const int64_t i3 = blk/nchunk;
++        const int64_t p0 = (blk % nchunk)*CH;
++        const int64_t np = MIN(CH, n_kv - p0);
++
++        const char * c_base = (const char *) c->data + (i3 % nec3)*nbc3 + p0*nbc0;
++        if (c->type == GGML_TYPE_I32) {
++            // position form: c from the positions, theta as the CUDA NEOX rope computes it
++            const float theta_scale = ggml_get_op_params_f32(dst, 1);
++            const float freq_scale  = ggml_get_op_params_f32(dst, 2);
++            const int32_t * pp = (const int32_t *) c->data + p0;
++            for (int64_t j = 0; j < half; ++j) {
++                const float tj = powf(theta_scale, (float) j);
++                for (int64_t i = 0; i < np; ++i) {
++                    const float theta = freq_scale*((float) pp[i]*tj);
++                    cf[j*CH + i]          = cosf(theta) - 1.0f;
++                    cf[(j + half)*CH + i] = sinf(theta);
++                }
++            }
++        }
++        for (int64_t k = 0; c->type != GGML_TYPE_I32 && k < D; ++k) {
++            if (c->type == GGML_TYPE_F16) {
++                ggml_cpu_fp16_to_fp32((const ggml_fp16_t *) (c_base + k*nbc1), cf + k*CH, np);
++            } else {
++                memcpy(cf + k*CH, c_base + k*nbc1, np*sizeof(float));
++            }
++        }
++
++        for (int64_t h = 0; h < neq1; ++h) {
++            const float * bv = (const float *) ((const char *) b->data + (h/gqa)*nbb1);
++            for (int64_t t = 0; t < neq2; ++t) {
++                const float * qv = (const float *) ((const char *) q->data + h*nbq1 + t*nbq2 + i3*nbq3);
++                for (int64_t j = 0; j < half; ++j) {
++                    u[j]        = qv[j]*bv[j] + qv[j + half]*bv[j + half];
++                    u[j + half] = qv[j + half]*bv[j] - qv[j]*bv[j + half];
++                }
++
++                float * out = (float *) ((char *) dst->data + t*nb1 + h*nb2 + i3*nb3) + p0;
++                memset(out, 0, np*sizeof(float));
++                for (int64_t k = 0; k < D; ++k) {
++                    ggml_vec_mad_f32(np, out, cf + k*CH, u[k]);
++                }
++                ggml_vec_scale_f32(np, out, scale);
++                if (dst->src[3] != nullptr) {
++                    // gated position form: an exempt key (gate < 0.5) gets -scale * sum_{j < D/2} A_j
++                    GGML_ASSERT(c->type == GGML_TYPE_I32);
++                    const ggml_tensor * gt = dst->src[3];
++                    float sa = 0.0f;
++                    for (int64_t j = 0; j < half; ++j) {
++                        sa += u[j];
++                    }
++                    const char * gb = (const char *) gt->data + (h/gqa)*gt->nb[0];
++                    for (int64_t i = 0; i < np; ++i) {
++                        if (*(const float *) (gb + (p0 + i)*gt->nb[1]) < 0.5f) {
++                            out[i] = -scale*sa;
++                        }
++                    }
++                }
++            }
++        }
++    }
+ }
+diff --git a/ggml/src/ggml-cpu/ops.h b/ggml/src/ggml-cpu/ops.h
+--- a/ggml/src/ggml-cpu/ops.h
++++ b/ggml/src/ggml-cpu/ops.h
+@@ -19,6 +19,9 @@
+ 
+ static const size_t CACHE_LINE_SIZE_F32 = CACHE_LINE_SIZE/sizeof(float);
+ 
++// keys per block of GGML_OP_KQ_ROPE_BIAS (the work buffer holds one block of c in F32 per thread)
++#define GGML_KQ_ROPE_BIAS_CPU_CHUNK 64
++
+ // Work buffer size for im2col operations in CONV2D
+ #define GGML_IM2COL_WORK_SIZE (16 * 1024 * 1024)
+ 
+@@ -108,6 +111,8 @@
+ void ggml_compute_forward_dsv4_hc_comb(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+ void ggml_compute_forward_dsv4_hc_pre(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+ void ggml_compute_forward_dsv4_hc_post(const struct ggml_compute_params * params, struct ggml_tensor * dst);
++void ggml_compute_forward_kq_rope_bias(const struct ggml_compute_params * params, struct ggml_tensor * dst);
++void ggml_compute_forward_kv_mu_gate(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+ void ggml_compute_forward_map_custom1(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+ void ggml_compute_forward_map_custom2(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+ void ggml_compute_forward_map_custom3(const struct ggml_compute_params * params, struct ggml_tensor * dst);
+diff --git a/ggml/src/ggml-cuda/fattn-common.cuh b/ggml/src/ggml-cuda/fattn-common.cuh
+--- a/ggml/src/ggml-cuda/fattn-common.cuh
++++ b/ggml/src/ggml-cuda/fattn-common.cuh
+@@ -18,6 +18,15 @@
+ // The macro on the following line shifts it by a factor of 2**3=8, as was needed to fix https://github.com/ggml-org/llama.cpp/issues/18606 .
+ #define FATTN_KQ_MAX_OFFSET (3.0f*0.6931f)
+ 
++// Optional per-head additive KQ bias: kq[i, j, h, s] += b[i + j*s1 + h*s2 + s*s3], applied before scaling.
++// Strides are in floats. b == nullptr disables it.
++struct fattn_kq_bias {
++    const float * b;
++    int32_t s1;
++    int32_t s2;
++    int64_t s3;
++};
++
+ typedef void (* fattn_kernel_t)(
+         const char * __restrict__ Q,
+         const char * __restrict__ K,
+@@ -39,7 +48,8 @@
+                             const int32_t nb11, const int32_t nb12, const int64_t nb13,
+                             const int32_t nb21, const int32_t nb22, const int64_t nb23,
+                             const int32_t ne31, const int32_t ne32, const int32_t ne33,
+-                            const int32_t nb31, const int32_t nb32, const int64_t nb33);
++                            const int32_t nb31, const int32_t nb32, const int64_t nb33,
++        const fattn_kq_bias kq_b);
+ 
+ typedef float (*vec_dot_KQ_t)(
+     const char * __restrict__ K_c, const void * __restrict__ Q_v, const int * __restrict__ Q_q8 , const void * __restrict__ Q_ds);
+@@ -993,6 +1003,7 @@
+ 
+     const ggml_tensor * mask  = dst->src[3];
+     const ggml_tensor * sinks = dst->src[4];
++    const ggml_tensor * kq_bias = dst->src[5];
+ 
+     ggml_tensor * KQV = dst;
+ 
+@@ -1245,6 +1256,15 @@
+     // TODO other tensor dimensions after removal of WMMA kernel:
+     const uint3 ne01 = init_fastdiv_values(Q->ne[1]);
+ 
++    fattn_kq_bias kq_b = {nullptr, 0, 0, 0};
++    if (kq_bias) {
++        GGML_ASSERT(!stream_k && !use_sparse);
++        kq_b.b  = (const float *) kq_bias->data;
++        kq_b.s1 = kq_bias->nb[1] / sizeof(float);
++        kq_b.s2 = kq_bias->nb[2] / sizeof(float);
++        kq_b.s3 = kq_bias->nb[3] / sizeof(float);
++    }
++
+     GGML_ASSERT(block_dim.x % warp_size == 0);
+ 
+     ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(blocks_num, block_dim, nbytes_shared, main_stream);
+@@ -1261,7 +1281,8 @@
+         K->ne[0], n_kv, K->ne[2], K->ne[3], nb11, nb12, nb13,
+         nb21, nb22, nb23,
+         mask ? mask->ne[1] : 0, mask ? mask->ne[2] : 0, mask ? mask->ne[3] : 0,
+-        mask ? mask->nb[1] : 0, mask ? mask->nb[2] : 0, mask ? mask->nb[3] : 0
++        mask ? mask->nb[1] : 0, mask ? mask->nb[2] : 0, mask ? mask->nb[3] : 0,
++        kq_b
+     );
+     CUDA_CHECK(cudaGetLastError());
+ 
+diff --git a/ggml/src/ggml-cuda/fattn.cu b/ggml/src/ggml-cuda/fattn.cu
+--- a/ggml/src/ggml-cuda/fattn.cu
++++ b/ggml/src/ggml-cuda/fattn.cu
+@@ -629,6 +629,12 @@
+         return BEST_FATTN_KERNEL_NONE;
+     }
+ 
++    // The per-head KQ bias is only implemented in the vec kernel (decode, <= 2 queries per sequence):
++    if (dst->src[5]) {
++        const bool vec_ok = Q->ne[0] <= 256 && Q->ne[0] % 64 == 0 && Q->ne[0] != 192 && K->ne[1] % FATTN_KQ_STRIDE == 0;
++        return vec_ok && Q->ne[1] <= 2 ? BEST_FATTN_KERNEL_VEC : BEST_FATTN_KERNEL_NONE;
++    }
++
+     // For small batch sizes the vector kernel may be preferable over the kernels optimized for large batch sizes:
+     // 192 satisfies % 64 == 0 but has no vec instance (DKQ != DV); force it onto the MMA path.
+     const bool can_use_vector_kernel = Q->ne[0] <= 256 && Q->ne[0] % 64 == 0 && Q->ne[0] != 192 && K->ne[1] % FATTN_KQ_STRIDE == 0;
+diff --git a/ggml/src/ggml-cuda/fattn-mma-f16.cuh b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+--- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
++++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+@@ -1816,7 +1816,9 @@
+                             const int32_t nb11, const int32_t nb12, const int64_t nb13,
+                             const int32_t nb21, const int32_t nb22, const int64_t nb23,
+                             const int32_t ne31, const int32_t ne32, const int32_t ne33,
+-                            const int32_t nb31, const int32_t nb32, const int64_t nb33) {
++                            const int32_t nb31, const int32_t nb32, const int64_t nb33,
++        const fattn_kq_bias kq_b) {
++    GGML_UNUSED(kq_b); // only the vec kernel supports the per-head KQ bias
+     ggml_cuda_pdl_sync(); // TODO optimize placement
+ #if defined(FLASH_ATTN_AVAILABLE) && (defined(VOLTA_MMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE) || defined(AMD_MFMA_AVAILABLE))
+     const char * GGML_CUDA_RESTRICT Q              = Q_ptr;
+diff --git a/ggml/src/ggml-cuda/fattn-tile.cuh b/ggml/src/ggml-cuda/fattn-tile.cuh
+--- a/ggml/src/ggml-cuda/fattn-tile.cuh
++++ b/ggml/src/ggml-cuda/fattn-tile.cuh
+@@ -811,7 +811,9 @@
+                             const int32_t nb11, const int32_t nb12, const int64_t nb13,
+                             const int32_t nb21, const int32_t nb22, const int64_t nb23,
+                             const int32_t ne31, const int32_t ne32, const int32_t ne33,
+-                            const int32_t nb31, const int32_t nb32, const int64_t nb33) {
++                            const int32_t nb31, const int32_t nb32, const int64_t nb33,
++        const fattn_kq_bias kq_b) {
++    GGML_UNUSED(kq_b); // only the vec kernel supports the per-head KQ bias
+ #ifdef FLASH_ATTN_AVAILABLE
+     const char * GGML_CUDA_RESTRICT Q        = Q_ptr;
+     const char * GGML_CUDA_RESTRICT K        = K_ptr;
+diff --git a/ggml/src/ggml-cuda/fattn-vec.cuh b/ggml/src/ggml-cuda/fattn-vec.cuh
+--- a/ggml/src/ggml-cuda/fattn-vec.cuh
++++ b/ggml/src/ggml-cuda/fattn-vec.cuh
+@@ -16,7 +16,7 @@
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wpass-failed"
+ #endif // __clang__
+-template<int D, int ncols, ggml_type type_K, ggml_type type_V, bool use_logit_softcap> // D == head size
++template<int D, int ncols, ggml_type type_K, ggml_type type_V, bool use_logit_softcap, bool has_kq_bias> // D == head size
+ __launch_bounds__(ggml_cuda_fattn_vec_get_nthreads_device(), 1)
+ static __global__ void flash_attn_ext_vec(
+         const char * Q_ptr,
+@@ -39,7 +39,8 @@
+                             const int32_t nb11, const int32_t nb12, const int64_t nb13,
+                             const int32_t nb21, const int32_t nb22, const int64_t nb23,
+                             const int32_t ne31, const int32_t ne32, const int32_t ne33,
+-                            const int32_t nb31, const int32_t nb32, const int64_t nb33) {
++                            const int32_t nb31, const int32_t nb32, const int64_t nb33,
++        const fattn_kq_bias kq_b) {
+     ggml_cuda_pdl_lc();
+ #ifdef FLASH_ATTN_AVAILABLE
+     const char * GGML_CUDA_RESTRICT Q        = Q_ptr;
+@@ -247,6 +248,10 @@
+ #endif // V_DOT2_F32_F16_AVAILABLE
+     }
+ 
++    // Optional per-head KQ bias (compiled in only if has_kq_bias), indexed like the mask: [key + column*s1].
++    // The runtime null check is kept: dropping it made the ncols == 2 kernel slower.
++    const float * GGML_CUDA_RESTRICT kqb = has_kq_bias && kq_b.b ? kq_b.b + int64_t(sequence)*kq_b.s3 + int64_t(head)*kq_b.s2 + int64_t(ic0)*kq_b.s1 : nullptr;
++
+     const int k_VKQ_max = KV_max ? KV_max[sequence*gridDim.x + blockIdx.x] : ne11;
+     K     += blockIdx.y*nthreads * nb11;
+     V     += blockIdx.y*nthreads * nb21;
+@@ -273,6 +278,10 @@
+                 float sum = vec_dot_KQ(K + i_KQ*nb11, Q_reg[j], Q_i32[j], Q_ds[j]);
+                 sum = warp_reduce_sum<nthreads_KQ>(sum);
+ 
++                if (has_kq_bias && kqb && (ncols == 1 || ic0 + j < int(ne01.z))) {
++                    sum += scale*kqb[j*kq_b.s1 + k_VKQ_0 + i_KQ];
++                }
++
+                 if (use_logit_softcap) {
+                     sum = logit_softcap*tanhf(sum);
+                 }
+@@ -522,7 +531,7 @@
+               nb11, nb12, nb13,
+               nb21, nb22, nb23,
+               ne31, ne32, ne33,
+-              nb31, nb32, nb33);
++              nb31, nb32, nb33, kq_b);
+     NO_DEVICE_CODE;
+ #endif // FLASH_ATTN_AVAILABLE
+ }
+@@ -536,7 +545,10 @@
+ 
+     const int nthreads = ggml_cuda_fattn_vec_get_nthreads_host(cc);
+     const int nwarps   = nthreads / WARP_SIZE;
+-    fattn_kernel_t fattn_kernel = flash_attn_ext_vec<D, cols_per_block, type_K, type_V, use_logit_softcap>;
++    // the optional per-head KQ bias (src[5]) is a template parameter, so the kernels without it are unchanged
++    fattn_kernel_t fattn_kernel = dst->src[5] ?
++        flash_attn_ext_vec<D, cols_per_block, type_K, type_V, use_logit_softcap, true> :
++        flash_attn_ext_vec<D, cols_per_block, type_K, type_V, use_logit_softcap, false>;
+     const bool need_f16_K = type_K == GGML_TYPE_F16;
+     const bool need_f16_V = type_V == GGML_TYPE_F16;
+     constexpr size_t nbytes_shared = 0;
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -70,6 +70,7 @@
+ #include "ggml-cuda/cumsum.cuh"
+ #include "ggml-cuda/fill.cuh"
+ #include "ggml-cuda/lightning-indexer.cuh"
++#include "ggml-cuda/kq-rope-bias.cuh"
+ #include "ggml.h"
+ 
+ #include <algorithm>
+@@ -2548,6 +2549,12 @@
+         case GGML_OP_LIGHTNING_INDEXER:
+             ggml_cuda_lightning_indexer(ctx, dst);
+             break;
++        case GGML_OP_KQ_ROPE_BIAS:
++            ggml_cuda_op_kq_rope_bias(ctx, dst);
++            break;
++        case GGML_OP_KV_MU_GATE:
++            ggml_cuda_op_kv_mu_gate(ctx, dst);
++            break;
+         default:
+             return false;
+     }
+@@ -5981,6 +5988,10 @@
+             return true;
+         case GGML_OP_LIGHTNING_INDEXER:
+             return ggml_cuda_lightning_indexer_supported(dev_ctx->device, op);
++        case GGML_OP_KQ_ROPE_BIAS:
++            return ggml_cuda_kq_rope_bias_supported(op);
++        case GGML_OP_KV_MU_GATE:
++            return ggml_cuda_kv_mu_gate_supported(op);
+ 
+         default:
+             return false;
+diff --git a/ggml/src/ggml-cuda/kq-rope-bias.cu b/ggml/src/ggml-cuda/kq-rope-bias.cu
+new file mode 100644
+--- /dev/null
++++ b/ggml/src/ggml-cuda/kq-rope-bias.cu
+@@ -0,0 +1,633 @@
++#include "kq-rope-bias.cuh"
++#include "reduce_rows.cuh"
++
++// GGML_OP_KQ_ROPE_BIAS: dst[p, col] = scale * sum_k c[p, k] u[k, col], u computed per RoPE pair from q and b.
++// A small GEMM (M = n_kv, N = n_tokens*n_head, K = D) done with F32 FMAs: each block computes u for its columns into
++// shared memory once, then every lane owns KPT consecutive keys and NCW columns, streaming c (keys contiguous) from
++// global memory and reading u as warp broadcasts.
++
++static constexpr int KQRB_NCW = 8; // columns per warp
++
++template <typename c_t, int KPT>
++static __device__ __forceinline__ void kqrb_load(const c_t * src, float * dst) {
++    if constexpr (std::is_same_v<c_t, half>) {
++        if constexpr (KPT == 4) {
++            const uint2 v = *(const uint2 *) src;
++            const float2 f0 = __half22float2(*(const half2 *) &v.x);
++            const float2 f1 = __half22float2(*(const half2 *) &v.y);
++            dst[0] = f0.x; dst[1] = f0.y; dst[2] = f1.x; dst[3] = f1.y;
++        } else {
++            static_assert(KPT == 1, "bad KPT");
++            dst[0] = __half2float(src[0]);
++        }
++    } else {
++        if constexpr (KPT == 4) {
++            const float4 v = *(const float4 *) src;
++            dst[0] = v.x; dst[1] = v.y; dst[2] = v.z; dst[3] = v.w;
++        } else {
++            static_assert(KPT == 1, "bad KPT");
++            dst[0] = src[0];
++        }
++    }
++}
++
++// block: NWC warps along the columns (KQRB_NCW each) x NWK warps along the keys (32*KPT each); UNROLL: k steps per
++// unrolled group, i.e. how many loads of c a lane has in flight (the k loop is a chain of D/UNROLL memory round trips)
++template <typename c_t, int KPT, int NWC, int NWK, int UNROLL>
++__launch_bounds__(WARP_SIZE*NWC*NWK)
++static __global__ void kq_rope_bias_kernel(
++        const float * q_ptr, const float * b_ptr, const c_t * c_ptr, float * dst_ptr,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t sc1, const int64_t sc3, const int nec3,
++        const int64_t s1, const int64_t s2, const int64_t s3, const float scale) {
++    constexpr int NCB = NWC*KQRB_NCW; // columns per block
++    constexpr int LDU = NCB + 4;      // row stride of u in shared memory, keeps the float4 reads aligned
++
++    // __restrict__ only inside the body (it must not change the kernel signature between the host and device passes)
++    const float * GGML_CUDA_RESTRICT q   = q_ptr;
++    const float * GGML_CUDA_RESTRICT b   = b_ptr;
++    const c_t   * GGML_CUDA_RESTRICT c   = c_ptr;
++    float       * GGML_CUDA_RESTRICT dst = dst_ptr;
++
++    extern __shared__ __align__(16) float u_s[]; // [D][LDU]
++
++    const int lane = threadIdx.x;
++    const int wc   = threadIdx.y % NWC;
++    const int wk   = threadIdx.y / NWC;
++    const int col0 = blockIdx.x*NCB;
++    const int i3   = blockIdx.z;
++    const int half = D/2;
++
++    ggml_cuda_pdl_sync();
++
++    // u of the block's columns (column col = t + n_tokens*h), consecutive threads read consecutive dimensions of q
++    for (int i = threadIdx.y*WARP_SIZE + lane; i < D*NCB; i += WARP_SIZE*NWC*NWK) {
++        const int cl  = i / D;
++        const int k   = i - cl*D;
++        const int col = col0 + cl;
++        float uk = 0.0f;
++        if (col < ncols) {
++            const int h = col / n_tokens;
++            const int t = col - h*n_tokens;
++            const float * qv = q + h*sq1 + t*sq2 + i3*sq3;
++            const float * bv = b + (h/gqa)*sb1;
++            const int j = k < half ? k : k - half;
++            const float q1 = qv[j];
++            const float q2 = qv[j + half];
++            const float b1 = bv[j];
++            const float b2 = bv[j + half];
++            uk = k < half ? q1*b1 + q2*b2 : q2*b1 - q1*b2;
++        }
++        u_s[k*LDU + cl] = uk;
++    }
++    __syncthreads();
++
++    const int p0 = (blockIdx.y*NWK + wk)*(WARP_SIZE*KPT) + lane*KPT; // n_kv % KPT == 0 for KPT > 1
++    if (p0 >= n_kv) {
++        return;
++    }
++
++    float acc[KPT][KQRB_NCW];
++#pragma unroll
++    for (int r = 0; r < KPT; ++r) {
++#pragma unroll
++        for (int cl = 0; cl < KQRB_NCW; ++cl) {
++            acc[r][cl] = 0.0f;
++        }
++    }
++
++    const c_t   * cp = c + (i3 % nec3)*sc3 + p0;
++    const float * us = u_s + wc*KQRB_NCW;
++
++#pragma unroll UNROLL
++    for (int k = 0; k < D; ++k) {
++        float cv[KPT];
++        kqrb_load<c_t, KPT>(cp + k*sc1, cv);
++        const float4 u0 = *(const float4 *) (us + k*LDU);
++        const float4 u1 = *(const float4 *) (us + k*LDU + 4);
++#pragma unroll
++        for (int r = 0; r < KPT; ++r) {
++            acc[r][0] += cv[r]*u0.x;
++            acc[r][1] += cv[r]*u0.y;
++            acc[r][2] += cv[r]*u0.z;
++            acc[r][3] += cv[r]*u0.w;
++            acc[r][4] += cv[r]*u1.x;
++            acc[r][5] += cv[r]*u1.y;
++            acc[r][6] += cv[r]*u1.z;
++            acc[r][7] += cv[r]*u1.w;
++        }
++    }
++
++    ggml_cuda_pdl_lc();
++
++#pragma unroll
++    for (int cl = 0; cl < KQRB_NCW; ++cl) {
++        const int col = col0 + wc*KQRB_NCW + cl;
++        if (col >= ncols) {
++            break;
++        }
++        const int h = col / n_tokens;
++        const int t = col - h*n_tokens;
++        float * out = dst + t*s1 + h*s2 + i3*s3 + p0;
++        if constexpr (KPT == 4) {
++            *(float4 *) out = make_float4(scale*acc[0][cl], scale*acc[1][cl], scale*acc[2][cl], scale*acc[3][cl]);
++        } else {
++#pragma unroll
++            for (int r = 0; r < KPT; ++r) {
++                out[r] = scale*acc[r][cl];
++            }
++        }
++    }
++}
++
++template <typename c_t, int KPT, int NWC, int UNROLL>
++static void kq_rope_bias_launch(
++        const float * q, const float * b, const c_t * c, float * dst,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa, const int ne3,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t sc1, const int64_t sc3, const int nec3,
++        const int64_t s1, const int64_t s2, const int64_t s3, const float scale, cudaStream_t stream) {
++    constexpr int NWK = NWC >= 4 ? 2 : 8/NWC;
++    constexpr int NCB = NWC*KQRB_NCW;
++
++    const int64_t nby = (n_kv + NWK*WARP_SIZE*KPT - 1) / (NWK*WARP_SIZE*KPT);
++    GGML_ASSERT(nby <= 65535 && ne3 <= 65535);
++
++    const dim3 grid((ncols + NCB - 1) / NCB, nby, ne3);
++    const dim3 block(WARP_SIZE, NWC*NWK, 1);
++    const size_t nbytes_shared = size_t(D)*(NCB + 4)*sizeof(float);
++
++    const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid, block, nbytes_shared, stream);
++    ggml_cuda_kernel_launch(kq_rope_bias_kernel<c_t, KPT, NWC, NWK, UNROLL>, launch_params,
++        q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale);
++}
++
++// Position form: one lane per key, NC columns per warp (all columns of the block), u of the block in shared memory.
++// c'[p, k] is evaluated in the lane: cos(theta_j) - 1 for k = j < D/2, then sin(theta_j) for k = j + D/2, in the order
++// k = 0..D-1 of the table kernel. theta_j = freq_scale * (pos * theta_scale^j) with theta_scale^j = powf(theta_scale, j)
++// on the device and cosf / sinf under the flags of this file, as rope_neox evaluates them (ggml_rope_ext then
++// ggml_sub of the unit vector: cos(theta) * 1 - 0 * sin(theta) - 1).
++// v4 (SG1): v3 plus an optional per-(cell, KV head) gate; an exempt key (gate < 0.5) gets -sum_j A_j, the
++// per-query constant the add-back drops for every key. v3: NWK warps along the keys x NS warps along the rotary pairs; each lane holds KPT keys (stride 32, so the position
++// loads and the bias stores stay coalesced). u of the block's NC columns is computed per (column, pair) into shared
++// memory once per block and reused by NWK*32*KPT keys. The NS partial sums of a key are added in shared memory in the
++// order ws = 0..NS-1. c'[p, k] is evaluated in the lane as in rope_neox: theta_j = freq_scale * (pos * powf(theta_scale,
++// j)), then cosf(theta) - 1 (k = j) and sinf(theta) (k = j + D/2).
++template <int NC, int KPT, int NWK, int NS>
++__launch_bounds__(WARP_SIZE*NWK*NS)
++static __global__ void kq_rope_bias_pos_kernel(
++        const float * q_ptr, const float * b_ptr, const int32_t * pos_ptr, float * dst_ptr,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t s1, const int64_t s2, const int64_t s3,
++        const float theta_scale, const float freq_scale, const float scale,
++        const float * gate_ptr, const int64_t sg1) {
++    constexpr int LDU = NC + 4;
++    constexpr int LDR = NC + 1;
++    constexpr int KPB = NWK*WARP_SIZE*KPT; // keys per block
++
++    const float   * GGML_CUDA_RESTRICT q   = q_ptr;
++    const float   * GGML_CUDA_RESTRICT b   = b_ptr;
++    const int32_t * GGML_CUDA_RESTRICT pos = pos_ptr;
++    float         * GGML_CUDA_RESTRICT dst = dst_ptr;
++
++    extern __shared__ __align__(16) float sm[]; // t: [D/2] (padded to 4), sA: [NC], then u: [D][LDU] (reused)
++    float * t_s  = sm;
++    float * sa_s = sm + ((D/2 + 3) & ~3);
++    float * u_s  = sa_s + NC;
++
++    const int lane = threadIdx.x;
++    const int wk   = threadIdx.y % NWK;
++    const int ws   = threadIdx.y / NWK;
++    const int tid  = threadIdx.y*WARP_SIZE + lane;
++    const int col0 = blockIdx.x*NC;
++    const int i3   = blockIdx.z;
++    const int half = D/2;
++
++    ggml_cuda_pdl_sync();
++
++    // u per (column, pair): consecutive threads take consecutive pairs of one column (coalesced q and b reads)
++    for (int i = tid; i < NC*half; i += WARP_SIZE*NWK*NS) {
++        const int cl  = i / half;
++        const int j   = i - cl*half;
++        const int col = col0 + cl;
++        float ua = 0.0f;
++        float ub = 0.0f;
++        if (col < ncols) {
++            const int h = col / n_tokens;
++            const int t = col - h*n_tokens;
++            const float * qv = q + h*sq1 + t*sq2 + i3*sq3;
++            const float * bv = b + (h/gqa)*sb1;
++            const float q1 = qv[j];
++            const float q2 = qv[j + half];
++            const float b1 = bv[j];
++            const float b2 = bv[j + half];
++            ua = q1*b1 + q2*b2;
++            ub = q2*b1 - q1*b2;
++        }
++        u_s[j*LDU + cl]          = ua;
++        u_s[(j + half)*LDU + cl] = ub;
++    }
++    for (int j = tid; j < half; j += WARP_SIZE*NWK*NS) {
++        t_s[j] = powf(theta_scale, (2*j)/2.0f); // rope_neox: powf(theta_scale, iw/2.0f), iw = 2j
++    }
++    __syncthreads();
++    if (gate_ptr != nullptr && tid < NC) {
++        float a = 0.0f; // sum_j A_j of column tid (u_j = A_j for j < D/2)
++        for (int j = 0; j < half; ++j) {
++            a += u_s[j*LDU + tid];
++        }
++        sa_s[tid] = a;
++    }
++
++    const int pb = blockIdx.y*KPB + wk*WARP_SIZE*KPT + lane; // key r of this lane: pb + 32 r
++    float pf[KPT];
++#pragma unroll
++    for (int r = 0; r < KPT; ++r) {
++        const int p = pb + r*WARP_SIZE;
++        pf[r] = p < n_kv ? (float) pos[p] : 0.0f;
++    }
++    const int j0 = (ws*half)/NS;
++    const int j1 = ((ws + 1)*half)/NS;
++
++    float acc[KPT][NC];
++#pragma unroll
++    for (int r = 0; r < KPT; ++r) {
++#pragma unroll
++        for (int cl = 0; cl < NC; ++cl) {
++            acc[r][cl] = 0.0f;
++        }
++    }
++    for (int j = j0; j < j1; ++j) {
++        const float tj = t_s[j];
++        float cv[KPT];
++#pragma unroll
++        for (int r = 0; r < KPT; ++r) {
++            cv[r] = cosf(freq_scale*(pf[r]*tj)) - 1.0f;
++        }
++        const float * us = u_s + j*LDU;
++#pragma unroll
++        for (int c4 = 0; c4 < NC; c4 += 4) {
++            const float4 uv = *(const float4 *) (us + c4);
++#pragma unroll
++            for (int r = 0; r < KPT; ++r) {
++                acc[r][c4 + 0] += cv[r]*uv.x;
++                acc[r][c4 + 1] += cv[r]*uv.y;
++                acc[r][c4 + 2] += cv[r]*uv.z;
++                acc[r][c4 + 3] += cv[r]*uv.w;
++            }
++        }
++    }
++    for (int j = j0; j < j1; ++j) {
++        const float tj = t_s[j];
++        float sv[KPT];
++#pragma unroll
++        for (int r = 0; r < KPT; ++r) {
++            sv[r] = sinf(freq_scale*(pf[r]*tj));
++        }
++        const float * us = u_s + (j + half)*LDU;
++#pragma unroll
++        for (int c4 = 0; c4 < NC; c4 += 4) {
++            const float4 uv = *(const float4 *) (us + c4);
++#pragma unroll
++            for (int r = 0; r < KPT; ++r) {
++                acc[r][c4 + 0] += sv[r]*uv.x;
++                acc[r][c4 + 1] += sv[r]*uv.y;
++                acc[r][c4 + 2] += sv[r]*uv.z;
++                acc[r][c4 + 3] += sv[r]*uv.w;
++            }
++        }
++    }
++
++    if constexpr (NS > 1) {
++        __syncthreads(); // u is no longer read: its space holds the partial sums of the warps ws >= 1
++        float * red = u_s;
++        if (ws > 0) {
++#pragma unroll
++            for (int r = 0; r < KPT; ++r) {
++                float * rp = red + (((ws - 1)*NWK + wk)*WARP_SIZE*KPT + r*WARP_SIZE + lane)*LDR;
++#pragma unroll
++                for (int cl = 0; cl < NC; ++cl) {
++                    rp[cl] = acc[r][cl];
++                }
++            }
++        }
++        __syncthreads();
++        if (ws == 0) {
++#pragma unroll
++            for (int s = 1; s < NS; ++s) {
++#pragma unroll
++                for (int r = 0; r < KPT; ++r) {
++                    const float * rp = red + (((s - 1)*NWK + wk)*WARP_SIZE*KPT + r*WARP_SIZE + lane)*LDR;
++#pragma unroll
++                    for (int cl = 0; cl < NC; ++cl) {
++                        acc[r][cl] += rp[cl];
++                    }
++                }
++            }
++        }
++    }
++
++    ggml_cuda_pdl_lc();
++
++    if (ws != 0) {
++        return;
++    }
++#pragma unroll
++    for (int cl = 0; cl < NC; ++cl) {
++        const int col = col0 + cl;
++        if (col < ncols) {
++            const int h = col / n_tokens;
++            const int t = col - h*n_tokens;
++            float * out = dst + t*s1 + h*s2 + i3*s3;
++            const float * gv = gate_ptr != nullptr ? gate_ptr + h/gqa : nullptr;
++#pragma unroll
++            for (int r = 0; r < KPT; ++r) {
++                const int p = pb + r*WARP_SIZE;
++                if (p < n_kv) {
++                    const bool exempt = gv != nullptr && gv[p*sg1] < 0.5f;
++                    out[p] = scale*(exempt ? -sa_s[cl] : acc[r][cl]);
++                }
++            }
++        }
++    }
++}
++
++template <int NC, int KPT, int NWK, int NS>
++static void kq_rope_bias_pos_launch_w(
++        const float * q, const float * b, const int32_t * pos, float * dst,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa, const int ne3,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t s1, const int64_t s2, const int64_t s3,
++        const float theta_scale, const float freq_scale, const float scale, const float * gate, const int64_t sg1,
++        cudaStream_t stream) {
++    constexpr int KPB = NWK*WARP_SIZE*KPT;
++    const int64_t nbx = (ncols + NC - 1) / NC;
++    const int64_t nby = (n_kv + KPB - 1) / KPB;
++    GGML_ASSERT(nby <= 65535 && ne3 <= 65535);
++    const dim3 grid(nbx, nby, ne3);
++    const dim3 block(WARP_SIZE, NWK*NS, 1);
++    const size_t n_u   = size_t(D)*(NC + 4);
++    const size_t n_red = size_t(NS - 1)*KPB*(NC + 1);
++    const size_t nbytes_shared = (size_t((D/2 + 3) & ~3) + NC + (n_u > n_red ? n_u : n_red))*sizeof(float);
++    GGML_ASSERT(nbytes_shared <= 48*1024);
++    const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid, block, nbytes_shared, stream);
++    ggml_cuda_kernel_launch(kq_rope_bias_pos_kernel<NC, KPT, NWK, NS>, launch_params,
++        q, b, pos, dst, D, n_kv, n_tokens, ncols, gqa, sq1, sq2, sq3, sb1, s1, s2, s3, theta_scale, freq_scale, scale,
++        gate, sg1);
++}
++
++template <int NC>
++static void kq_rope_bias_pos_launch(
++        const float * q, const float * b, const int32_t * pos, float * dst,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa, const int ne3,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t s1, const int64_t s2, const int64_t s3,
++        const float theta_scale, const float freq_scale, const float scale, const int nsm,
++        const float * gate, const int64_t sg1, cudaStream_t stream) {
++    // few keys (fewer blocks of 128 keys than SMs): 1 key per lane, 1 key warp, 8 pair warps;
++    // otherwise 2 keys per lane, 2 key warps x 4 pair warps (128 keys per block)
++    const int64_t nbx = (ncols + NC - 1) / NC;
++    const bool few = nbx*((n_kv + 127) / 128)*ne3 < nsm;
++    if (few) {
++        kq_rope_bias_pos_launch_w<NC, 1, 1, 8>(q, b, pos, dst, D, n_kv, n_tokens, ncols, gqa, ne3,
++            sq1, sq2, sq3, sb1, s1, s2, s3, theta_scale, freq_scale, scale, gate, sg1, stream);
++    } else if constexpr (NC >= 32) {
++        kq_rope_bias_pos_launch_w<NC, 2, 1, 4>(q, b, pos, dst, D, n_kv, n_tokens, ncols, gqa, ne3,
++            sq1, sq2, sq3, sb1, s1, s2, s3, theta_scale, freq_scale, scale, gate, sg1, stream);
++    } else {
++        kq_rope_bias_pos_launch_w<NC, 2, 2, 4>(q, b, pos, dst, D, n_kv, n_tokens, ncols, gqa, ne3,
++            sq1, sq2, sq3, sb1, s1, s2, s3, theta_scale, freq_scale, scale, gate, sg1, stream);
++    }
++}
++
++template <typename c_t, int KPT, int UNROLL>
++static void kq_rope_bias_case_u(
++        const int nwc, const float * q, const float * b, const c_t * c, float * dst,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa, const int ne3,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t sc1, const int64_t sc3, const int nec3,
++        const int64_t s1, const int64_t s2, const int64_t s3, const float scale, cudaStream_t stream) {
++    switch (nwc) {
++        case 1: kq_rope_bias_launch<c_t, KPT, 1, UNROLL>(q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream); break;
++        case 2: kq_rope_bias_launch<c_t, KPT, 2, UNROLL>(q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream); break;
++        case 3: kq_rope_bias_launch<c_t, KPT, 3, UNROLL>(q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream); break;
++        default: kq_rope_bias_launch<c_t, KPT, 4, UNROLL>(q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream); break;
++    }
++}
++
++template <typename c_t, int KPT>
++static void kq_rope_bias_case(
++        const int unroll, const int nwc, const float * q, const float * b, const c_t * c, float * dst,
++        const int D, const int n_kv, const int n_tokens, const int ncols, const int gqa, const int ne3,
++        const int64_t sq1, const int64_t sq2, const int64_t sq3, const int64_t sb1,
++        const int64_t sc1, const int64_t sc3, const int nec3,
++        const int64_t s1, const int64_t s2, const int64_t s3, const float scale, cudaStream_t stream) {
++    if (unroll == 8) {
++        kq_rope_bias_case_u<c_t, KPT, 8>(nwc, q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream);
++    } else {
++        kq_rope_bias_case_u<c_t, KPT, 32>(nwc, q, b, c, dst, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, nec3, s1, s2, s3, scale, stream);
++    }
++}
++
++void ggml_cuda_op_kq_rope_bias(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
++    const ggml_tensor * q = dst->src[0];
++    const ggml_tensor * b = dst->src[1];
++    const ggml_tensor * c = dst->src[2];
++
++    GGML_ASSERT(ggml_cuda_kq_rope_bias_supported(dst));
++
++    if (c->type == GGML_TYPE_I32) {
++        const int D        = q->ne[0];
++        const int n_tokens = q->ne[2];
++        const int ncols    = q->ne[1]*n_tokens;
++        const int nsm      = ggml_cuda_info().devices[ctx.device].nsm;
++        const float scale       = ggml_get_op_params_f32(dst, 0);
++        const float theta_scale = ggml_get_op_params_f32(dst, 1);
++        const float freq_scale  = ggml_get_op_params_f32(dst, 2);
++        const float * q_d = (const float *) q->data;
++        const float * b_d = (const float *) b->data;
++        const int32_t * p_d = (const int32_t *) c->data;
++        float * dst_d = (float *) dst->data;
++        const int64_t sq1 = q->nb[1]/sizeof(float), sq2 = q->nb[2]/sizeof(float), sq3 = q->nb[3]/sizeof(float);
++        const int64_t sb1 = b->nb[1]/sizeof(float);
++        const int64_t s1 = dst->nb[1]/sizeof(float), s2 = dst->nb[2]/sizeof(float), s3 = dst->nb[3]/sizeof(float);
++        const int gqa = q->ne[1] / b->ne[1];
++        const ggml_tensor * gt = dst->src[3];
++        const float * g_d = gt != nullptr ? (const float *) gt->data : nullptr;
++        const int64_t sg1 = gt != nullptr ? gt->nb[1]/sizeof(float) : 0;
++        cudaStream_t stream = ctx.stream();
++        // columns per block: 8 / 16 / 32 (more columns: several blocks along x)
++#define KQRB_POS_ARGS q_d, b_d, p_d, dst_d, D, (int) c->ne[0], n_tokens, ncols, gqa, (int) q->ne[3], \
++            sq1, sq2, sq3, sb1, s1, s2, s3, theta_scale, freq_scale, scale, nsm, g_d, sg1, stream
++        if (ncols <= 8) {
++            kq_rope_bias_pos_launch<8>(KQRB_POS_ARGS);
++        } else if (ncols <= 16 || D > 64) {
++            kq_rope_bias_pos_launch<16>(KQRB_POS_ARGS); // more columns: several column blocks of 16
++        } else {
++            kq_rope_bias_pos_launch<32>(KQRB_POS_ARGS);
++        }
++#undef KQRB_POS_ARGS
++        return;
++    }
++
++    const int D        = q->ne[0];
++    const int n_head   = q->ne[1];
++    const int n_tokens = q->ne[2];
++    const int ne3      = q->ne[3];
++    const int n_kv     = c->ne[0];
++    const int ncols    = n_head*n_tokens;
++    const int gqa      = n_head / b->ne[1];
++    const float scale  = ggml_get_op_params_f32(dst, 0);
++
++    const size_t ts = ggml_type_size(c->type);
++
++    const int64_t sq1 = q->nb[1]/sizeof(float);
++    const int64_t sq2 = q->nb[2]/sizeof(float);
++    const int64_t sq3 = q->nb[3]/sizeof(float);
++    const int64_t sb1 = b->nb[1]/sizeof(float);
++    const int64_t sc1 = c->nb[1]/ts;
++    const int64_t sc3 = c->nb[3]/ts;
++    const int64_t s1  = dst->nb[1]/sizeof(float);
++    const int64_t s2  = dst->nb[2]/sizeof(float);
++    const int64_t s3  = dst->nb[3]/sizeof(float);
++
++    // columns per block: NWC warps x 8 columns
++    const int nwc = ncols <= 8 ? 1 : ncols <= 16 ? 2 : ncols <= 24 ? 3 : 4;
++    const int nwk = nwc >= 4 ? 2 : 8/nwc;
++
++    // 4 keys per lane (one vector load) if the layout allows it and there are still enough blocks for all SMs
++    const bool vec_ok = n_kv % 4 == 0 && sc1 % 4 == 0 && sc3 % 4 == 0 && s1 % 4 == 0 && s2 % 4 == 0 && s3 % 4 == 0 &&
++        (uintptr_t) c->data % (4*ts) == 0 && (uintptr_t) dst->data % 16 == 0;
++    const int64_t nblocks4 = (int64_t) ((ncols + nwc*KQRB_NCW - 1) / (nwc*KQRB_NCW)) * ((n_kv + nwk*WARP_SIZE*4 - 1) / (nwk*WARP_SIZE*4)) * ne3;
++    static const int kpt_env = getenv("GGML_CUDA_KQRB_KPT") ? atoi(getenv("GGML_CUDA_KQRB_KPT")) : 0; // tuning only
++    int kpt = vec_ok && nblocks4 >= ggml_cuda_info().devices[ctx.device].nsm ? 4 : 1;
++    if (kpt_env == 1 || (kpt_env == 4 && vec_ok)) {
++        kpt = kpt_env;
++    }
++    // loads in flight per lane; the unroll factor does not change the order of the accumulation (tuning only: env)
++    static const int unroll = getenv("GGML_CUDA_KQRB_UNROLL") && atoi(getenv("GGML_CUDA_KQRB_UNROLL")) == 8 ? 8 : 32;
++
++    const float * q_d = (const float *) q->data;
++    const float * b_d = (const float *) b->data;
++    float * dst_d = (float *) dst->data;
++    cudaStream_t stream = ctx.stream();
++
++    if (c->type == GGML_TYPE_F16) {
++        const half * c_d = (const half *) c->data;
++        if (kpt == 4) {
++            kq_rope_bias_case<half, 4>(unroll, nwc, q_d, b_d, c_d, dst_d, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, c->ne[3], s1, s2, s3, scale, stream);
++        } else {
++            kq_rope_bias_case<half, 1>(unroll, nwc, q_d, b_d, c_d, dst_d, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, c->ne[3], s1, s2, s3, scale, stream);
++        }
++    } else {
++        const float * c_d = (const float *) c->data;
++        if (kpt == 4) {
++            kq_rope_bias_case<float, 4>(unroll, nwc, q_d, b_d, c_d, dst_d, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, c->ne[3], s1, s2, s3, scale, stream);
++        } else {
++            kq_rope_bias_case<float, 1>(unroll, nwc, q_d, b_d, c_d, dst_d, D, n_kv, n_tokens, ncols, gqa, ne3, sq1, sq2, sq3, sb1, sc1, sc3, c->ne[3], s1, s2, s3, scale, stream);
++        }
++    }
++}
++
++bool ggml_cuda_kq_rope_bias_supported(const ggml_tensor * dst) {
++    const ggml_tensor * q = dst->src[0];
++    const ggml_tensor * b = dst->src[1];
++    const ggml_tensor * c = dst->src[2];
++
++    if (dst->type != GGML_TYPE_F32 || q->type != GGML_TYPE_F32 || b->type != GGML_TYPE_F32) {
++        return false;
++    }
++    if (c->type == GGML_TYPE_I32) {
++        // position form: u of 32 or 64 columns plus D/2 powers in shared memory (<= 37 KB)
++        return q->ne[0] % 2 == 0 && q->ne[0] <= 256 && q->nb[0] == sizeof(float) && b->nb[0] == sizeof(float) &&
++            (q->nb[1] | q->nb[2] | q->nb[3] | b->nb[1]) % sizeof(float) == 0 && ggml_is_contiguous(c) &&
++            ggml_is_vector(c) && ggml_is_contiguous(dst) && b->ne[2] == 1 && b->ne[3] == 1 &&
++            (dst->src[3] == nullptr || (dst->src[3]->type == GGML_TYPE_F32 && dst->src[3]->nb[0] == sizeof(float) &&
++             dst->src[3]->ne[0] == b->ne[1] && dst->src[3]->ne[1] == c->ne[0]));
++    }
++    if (c->type != GGML_TYPE_F32 && c->type != GGML_TYPE_F16) {
++        return false;
++    }
++    // u of a block lives in shared memory: D*(32 + 4) floats, at most 36 KB for D = 256
++    if (q->ne[0] % 2 != 0 || q->ne[0] > 256) {
++        return false;
++    }
++    if (q->nb[0] != sizeof(float) || b->nb[0] != sizeof(float) || c->nb[0] != ggml_type_size(c->type)) {
++        return false;
++    }
++    if ((q->nb[1] | q->nb[2] | q->nb[3] | b->nb[1]) % sizeof(float) != 0 || (c->nb[1] | c->nb[3]) % ggml_type_size(c->type) != 0) {
++        return false;
++    }
++    return ggml_is_contiguous(dst) && b->ne[2] == 1 && b->ne[3] == 1 && c->ne[2] == 1;
++}
++
++// ------------------------------------------------------------------------------------------------ SG2 sink gate
++// mode 0: one block per row (h, t); the products k*mu go to shared memory and are summed with reduce_row_f32 under the
++// block size rule of sum_rows_f32_cuda, so dot equals SG1's mul + sum_rows bit for bit; then (dot - half) > 0 as
++// SG1's sub + step. force: -1 rule, 1 all centred, 0 all exempt (SG1: scale_bias(dot, 0, force)).
++static __global__ void kv_mu_gate_kernel(const char * k, const float * mu, const float * half, float * g,
++        const int D, const int H, const int64_t nbk1, const int64_t nbk2, const int force) {
++    extern __shared__ float prod_s[];
++    ggml_cuda_pdl_sync(); // k may be the output of the previous kernel (PDL)
++    const int r = blockIdx.x;
++    const int h = r % H;
++    const int t = r / H;
++    const float * kr = (const float *) (k + h*nbk1 + t*nbk2);
++    const float * mr = mu + h*D;
++    for (int i = threadIdx.x; i < D; i += blockDim.x) {
++        prod_s[i] = kr[i]*mr[i];
++    }
++    __syncthreads();
++    const float dot = reduce_row_f32(prod_s, D);
++    if (threadIdx.x == 0) {
++        g[h + t*H] = force < 0 ? (float) ((dot - half[h]) > 0.0f) : 0.0f*dot + (float) force;
++    }
++}
++
++// mode 1: k_out = k - mu*g (SG1: repeat, mul, sub)
++static __global__ void kv_mu_apply_kernel(const char * k, const float * mu, const float * g, float * out,
++        const int D, const int H, const int T, const int64_t nbk1, const int64_t nbk2) {
++    ggml_cuda_pdl_sync();
++    const int64_t i = (int64_t) blockIdx.x*blockDim.x + threadIdx.x;
++    if (i >= (int64_t) D*H*T) {
++        return;
++    }
++    const int d = i % D;
++    const int h = (i / D) % H;
++    const int t = i / ((int64_t) D*H);
++    const float kv = ((const float *) (k + h*nbk1 + t*nbk2))[d];
++    out[i] = kv - mu[h*D + d]*g[h + t*H];
++}
++
++void ggml_cuda_op_kv_mu_gate(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
++    const ggml_tensor * k  = dst->src[0];
++    const ggml_tensor * mu = dst->src[1];
++    const ggml_tensor * x  = dst->src[2];
++    const int mode = ggml_get_op_params_i32(dst, 0);
++    const int D = k->ne[0], H = k->ne[1], T = k->ne[2];
++    cudaStream_t stream = ctx.stream();
++    if (mode == 0) {
++        const int force = ggml_get_op_params_i32(dst, 1);
++        const int nrows = H*T;
++        const int nsm   = ggml_cuda_info().devices[ctx.device].nsm;
++        // the block size rule of sum_rows_f32_cuda for contiguous rows of D products
++        const int nthreads = (nrows / nsm) < 2 ? 512 : (D < 1024 ? 32 : 128);
++        const ggml_cuda_kernel_launch_params lp = ggml_cuda_kernel_launch_params(dim3(nrows), dim3(nthreads), D*sizeof(float), stream);
++        ggml_cuda_kernel_launch(kv_mu_gate_kernel, lp, (const char *) k->data, (const float *) mu->data, (const float *) x->data,
++            (float *) dst->data, D, H, (int64_t) k->nb[1], (int64_t) k->nb[2], force);
++    } else {
++        const int64_t n = (int64_t) D*H*T;
++        const int nb = (n + 255)/256;
++        const ggml_cuda_kernel_launch_params lp = ggml_cuda_kernel_launch_params(dim3(nb), dim3(256), 0, stream);
++        ggml_cuda_kernel_launch(kv_mu_apply_kernel, lp, (const char *) k->data, (const float *) mu->data, (const float *) x->data,
++            (float *) dst->data, D, H, T, (int64_t) k->nb[1], (int64_t) k->nb[2]);
++    }
++}
++
++bool ggml_cuda_kv_mu_gate_supported(const ggml_tensor * dst) {
++    const ggml_tensor * k = dst->src[0];
++    return dst->type == GGML_TYPE_F32 && k->type == GGML_TYPE_F32 && k->nb[0] == sizeof(float) && k->ne[3] == 1 &&
++        k->ne[0] <= 8192 && (k->nb[1] | k->nb[2]) % sizeof(float) == 0 && ggml_is_contiguous(dst);
++}
+diff --git a/ggml/src/ggml-cuda/kq-rope-bias.cuh b/ggml/src/ggml-cuda/kq-rope-bias.cuh
+new file mode 100644
+--- /dev/null
++++ b/ggml/src/ggml-cuda/kq-rope-bias.cuh
+@@ -0,0 +1,6 @@
++#include "common.cuh"
++
++void ggml_cuda_op_kq_rope_bias(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
++bool ggml_cuda_kq_rope_bias_supported(const ggml_tensor * dst);
++void ggml_cuda_op_kv_mu_gate(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
++bool ggml_cuda_kv_mu_gate_supported(const ggml_tensor * dst);
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -558,6 +558,10 @@
+     if (self_v_rot && self_v_rot->buffer) {
+         mctx->set_input_v_rot(self_v_rot);
+     }
++
++    if (self_kv_pos && self_kv_pos->buffer) {
++        mctx->set_input_kv_pos(self_kv_pos);
++    }
+ }
+ 
+ bool llm_graph_input_attn_kv::can_reuse(const llm_graph_params & params) {
+@@ -2921,6 +2925,7 @@
+     ggml_tensor * cur;
+ 
+     const bool use_flash_attn = cparams.flash_attn && kq_b == nullptr;
++    GGML_ASSERT((use_flash_attn || kv_debias_kqb == nullptr) && "per-head KQ bias requires flash attention");
+     if (use_flash_attn) {
+         GGML_ASSERT(kq_b == nullptr && "Flash attention does not support KQ bias yet");
+ 
+@@ -2942,6 +2947,10 @@
+         res->add_fused_node({LLM_FUSED_OP_FLASH_ATTN, cur, il});
+ 
+         ggml_flash_attn_ext_add_sinks(cur, sinks);
++        if (kv_debias_kqb) {
++            ggml_flash_attn_ext_add_kq_bias(cur, kv_debias_kqb);
++            kv_debias_kqb = nullptr;
++        }
+         GGML_ASSERT(n_kv_max >= 0 && n_kv_max <= INT32_MAX);
+         ggml_flash_attn_ext_set_n_kv_max(cur, static_cast<int32_t>(n_kv_max));
+         ggml_prec_set_acc(cur, GGML_PREC_F32);
+@@ -3212,6 +3221,19 @@
+         v = mctx_cur->get_v(ctx0, il);
+     }
+ 
++    if (kv_debias_k_add) {
++        // KV de-offset: rebuild K = dequant(K) + H R(p) b in F16 for this ubatch
++        ggml_tensor * k_add = kv_debias_k_add;
++        if (inp->self_k_rot) {
++            k_add = llama_mul_mat_hadamard(ctx0, k_add, inp->self_k_rot);
++        }
++        GGML_ASSERT(k->ne[3] == 1);
++        k = ggml_add(ctx0, ggml_cast(ctx0, k, GGML_TYPE_F32), k_add);
++        k = ggml_cast(ctx0, k, GGML_TYPE_F16);
++        cb(k, "k_debias", il);
++        kv_debias_k_add = nullptr;
++    }
++
+     ggml_tensor * kq_mask = inp->get_kq_mask();
+ 
+     ggml_tensor * cur = build_attn_mha(q, k, v, kq_b, kq_mask, sinks, v_mla, 0, kq_scale, il);
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -367,6 +367,9 @@
+     ggml_tensor * self_k_rot = nullptr;
+     ggml_tensor * self_v_rot = nullptr;
+ 
++    // optional, created by the model graph: position of each KV cell (single stream only)
++    ggml_tensor * self_kv_pos = nullptr; // I32 [n_kv]
++
+     // note: these have to be copies because in order to be able to reuse a graph, its inputs
+     //       need to carry these parameters with them. otherwise, they can point to freed
+     //       llm_graph_params from a previous batch, causing stack-use-after-return
+@@ -1072,6 +1075,10 @@
+     ggml_context * ctx0 = nullptr;
+     ggml_cgraph  * gf   = nullptr;
+ 
++    // optional KV de-offset correction consumed by the next build_attn call (set by the model graph)
++    mutable ggml_tensor * kv_debias_kqb   = nullptr; // F32 [n_kv, n_tokens, n_head]: per-head KQ bias for flash attention
++    mutable ggml_tensor * kv_debias_k_add = nullptr; // F32 [n_embd_head, n_head_kv, n_kv]: added to K before attention
++
+     llm_graph_context(const llm_graph_params & params);
+     virtual ~llm_graph_context() = default;
+ 
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -114,7 +114,7 @@
+         auto it = ctx_map.find(buft);
+         if (it == ctx_map.end()) {
+             ggml_init_params params = {
+-                /*.mem_size   =*/ size_t(2u*(1 + n_stream)*n_layer*ggml_tensor_overhead()),
++                /*.mem_size   =*/ size_t((2u*(1 + n_stream) + 1u)*n_layer*ggml_tensor_overhead()), // +1: SG1 flags
+                 /*.mem_buffer =*/ NULL,
+                 /*.no_alloc   =*/ true,
+             };
+@@ -230,7 +230,16 @@
+         const bool has_k = true;
+         const bool has_v = !is_mla;
+ 
+-        ggml_tensor * k = has_k ? ggml_new_tensor_3d(ctx, type_k, n_embd_k_gqa, kv_size, n_stream) : nullptr;
++        // experimental (B2 control): LLAMA_KV_F16_LAYERS="0,3" keeps K of the listed layers in F16
++        ggml_type type_k_l = type_k;
++        if (const char * e = getenv("LLAMA_KV_F16_LAYERS")) {
++            const std::string list = std::string(",") + e + ",";
++            if (list.find("," + std::to_string(il) + ",") != std::string::npos) {
++                type_k_l = GGML_TYPE_F16;
++                LLAMA_LOG_INFO("%s: layer %3d: K kept in F16 (LLAMA_KV_F16_LAYERS)\n", __func__, il);
++            }
++        }
++        ggml_tensor * k = has_k ? ggml_new_tensor_3d(ctx, type_k_l, n_embd_k_gqa, kv_size, n_stream) : nullptr;
+         ggml_tensor * v = has_v ? ggml_new_tensor_3d(ctx, type_v, n_embd_v_gqa, kv_size, n_stream) : nullptr;
+ 
+         has_k && ggml_format_name(k, "cache_%sk_l%d", name_tag, il);
+@@ -244,9 +253,21 @@
+             v_stream.push_back(has_v ? ggml_view_2d(ctx, v, n_embd_v_gqa, kv_size, v->nb[1], s*v->nb[2]) : nullptr);
+         }
+ 
++        // SG1: per-cell, per-KV-head flag of the sink gate (only with LLAMA_KV_DEBIAS_MU and LLAMA_KV_MU_GATE)
++        ggml_tensor * kflag = nullptr;
++        {
++            const char * gmu = getenv("LLAMA_KV_DEBIAS_MU");
++            const char * gg  = getenv("LLAMA_KV_MU_GATE");
++            if (gmu && gmu[0] && gg && gg[0] && strcmp(gg, "0") != 0) {
++                GGML_ASSERT(n_stream == 1 && "LLAMA_KV_MU_GATE: single KV stream only");
++                kflag = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, hparams.n_head_kv(il), kv_size);
++                ggml_format_name(kflag, "cache_%skflag_l%d", name_tag, il);
++            }
++        }
++
+         map_layer_ids[il] = layers.size();
+ 
+-        layers.push_back({ il, k, v, k_stream, v_stream, });
++        layers.push_back({ il, k, v, k_stream, v_stream, kflag });
+     }
+ 
+     if (reuse) {
+@@ -1295,6 +1316,10 @@
+     return result;
+ }
+ 
++ggml_tensor * llama_kv_cache::get_kflag(int32_t il) const {
++    return layers[map_layer_ids.at(il)].kflag;
++}
++
+ ggml_tensor * llama_kv_cache::get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const {
+     const int32_t ikv = map_layer_ids.at(il);
+ 
+@@ -1845,6 +1870,21 @@
+     memcpy(dst->data, attn_rot_hadamard.at(n_rot).data(), ggml_nbytes(dst));
+ }
+ 
++void llama_kv_cache::set_input_kv_pos(ggml_tensor * dst) const {
++    GGML_ASSERT(n_stream == 1 && "TODO: support multiple streams");
++    GGML_ASSERT(ggml_backend_buffer_is_host(dst->buffer));
++    GGML_ASSERT(dst->type == GGML_TYPE_I32);
++
++    const auto & cells = v_cells[0];
++
++    int32_t * data = (int32_t *) dst->data;
++
++    for (int64_t j = 0; j < dst->ne[0]; ++j) {
++        // empty cells are masked out in the attention, any finite position works
++        data[j] = j < (int64_t) cells.size() && !cells.is_empty(j) ? cells.pos_get(j) : 0;
++    }
++}
++
+ bool llama_kv_cache::has_cell_ext() const {
+     // M-RoPE needs the 2D position, the PLE n-gram hash needs the token id
+     return hparams.n_pos_per_embd() > 1 || hparams.ple_n_heads > 0;
+@@ -2897,6 +2937,10 @@
+     return kv->type_v();
+ }
+ 
++ggml_tensor * llama_kv_cache_context::get_kflag(int32_t il) const {
++    return kv->get_kflag(il);
++}
++
+ ggml_tensor * llama_kv_cache_context::get_k(ggml_context * ctx, int32_t il) const {
+     return kv->get_k(ctx, il, n_kv, sinfos[i_cur]);
+ }
+@@ -2957,6 +3001,10 @@
+     kv->set_input_v_rot(dst);
+ }
+ 
++void llama_kv_cache_context::set_input_kv_pos(ggml_tensor * dst) const {
++    kv->set_input_kv_pos(dst);
++}
++
+ void llama_kv_cache_context::get_prev_tokens(const llama_ubatch & ubatch, uint32_t n, std::vector<llama_token> & res) const {
+     kv->get_prev_tokens(ubatch, n, res);
+ }
+diff --git a/src/llama-kv-cache.h b/src/llama-kv-cache.h
+--- a/src/llama-kv-cache.h
++++ b/src/llama-kv-cache.h
+@@ -194,6 +194,7 @@
+ 
+     // get views of the current state of the cache
+     ggml_tensor * get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
++    ggml_tensor * get_kflag(int32_t il) const; // SG1 flag tensor of layer il, or nullptr
+     ggml_tensor * get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
+ 
+     // store k_cur and v_cur in the cache based on the provided head location
+@@ -238,6 +239,7 @@
+ 
+     void set_input_k_rot(ggml_tensor * dst) const;
+     void set_input_v_rot(ggml_tensor * dst) const;
++    void set_input_kv_pos(ggml_tensor * dst) const; // single stream only
+ 
+     // true if llama_kv_cell_ext holds information that has to survive a state save/restore
+     bool has_cell_ext() const;
+@@ -264,6 +266,9 @@
+ 
+         std::vector<ggml_tensor *> k_stream;
+         std::vector<ggml_tensor *> v_stream;
++
++        // SG1 sink gate (LLAMA_KV_MU_GATE): F32 [n_head_kv, kv_size], 1 = centred key, 0 = exempt key
++        ggml_tensor * kflag = nullptr;
+     };
+ 
+     bool v_trans = true;  // the value tensor is transposed
+@@ -406,6 +411,7 @@
+     // get views of the current state of the cache
+     ggml_tensor * get_k(ggml_context * ctx, int32_t il) const;
+     ggml_tensor * get_v(ggml_context * ctx, int32_t il) const;
++    ggml_tensor * get_kflag(int32_t il) const; // SG1: full flag tensor [n_head_kv, kv_size] of layer il, or nullptr
+ 
+     // store k_cur and v_cur in the cache based on the provided head location
+     // note: the heads in k_cur and v_cur should be laid out contiguously in memory
+@@ -434,6 +440,7 @@
+ 
+     void set_input_k_rot(ggml_tensor * dst) const;
+     void set_input_v_rot(ggml_tensor * dst) const;
++    void set_input_kv_pos(ggml_tensor * dst) const; // single stream only
+ 
+     // see llama_kv_cache::get_prev_tokens()
+     void get_prev_tokens(const llama_ubatch & ubatch, uint32_t n, std::vector<llama_token> & res) const;
+diff --git a/src/models/gptneox.cpp b/src/models/gptneox.cpp
+--- a/src/models/gptneox.cpp
++++ b/src/models/gptneox.cpp
+@@ -1,4 +1,5 @@
+ #include "models.h"
++#include "kv-mu.h"
+ 
+ void llama_model_gptneox::load_arch_hparams(llama_model_loader & ml) {
+     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_EPS, hparams.f_norm_eps);
+@@ -101,6 +102,10 @@
+ 
+     ggml_tensor * inp_out_ids = build_inp_out_ids();
+ 
++    // KV de-offset with calibrated mu (see kv-mu.h)
++    kv_mu::state dmu;
++    const bool use_mu = kv_mu::init(dmu, *this, inp_attn, n_layer, n_head_kv, n_embd_head);
++
+     for (int il = 0; il < n_layer; ++il) {
+         cur = build_norm(inpL,
+                 model.layers[il].attn_norm,
+@@ -113,6 +118,10 @@
+             auto [Qcur, Kcur, Vcur] = build_qkv(model.layers[il], cur,
+                     n_embd_head, n_head, n_head_kv, il);
+ 
++            if (use_mu) {
++                Kcur = kv_mu::sub(dmu, ctx0, Kcur, il);
++            }
++
+             Qcur = ggml_rope_ext(
+                     ctx0, Qcur, inp_pos, nullptr,
+                     n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+@@ -125,6 +134,11 @@
+                     ext_factor, attn_factor, beta_fast, beta_slow
+                     );
+ 
++            if (use_mu) {
++                kv_debias_k_add = kv_mu::rope_mu(dmu, ctx0, il, n_rot, rope_type, n_ctx_orig, freq_base, freq_scale, ext_factor, attn_factor, beta_fast, beta_slow);
++                cb(kv_debias_k_add, "kv_mu_rb", il);
++            }
++
+             cb(Qcur, "Qcur", il);
+             cb(Kcur, "Kcur", il);
+             cb(Vcur, "Vcur", il);
+diff --git a/src/models/kv-mu.h b/src/models/kv-mu.h
+new file mode 100644
+--- /dev/null
++++ b/src/models/kv-mu.h
+@@ -0,0 +1,446 @@
++#pragma once
++
++// KV de-offset with a calibrated shared key component (experimental, env LLAMA_KV_DEBIAS_MU=<file>).
++// mu[l][h] is the mean pre-RoPE key of layer l, kv head h (after any k bias and k norm), estimated offline on a
++// calibration text. The model graph subtracts mu from K before RoPE (so the cached, quantized K holds only the
++// content part) and adds its score contribution q . R(p) mu back:
++//   decode graphs (<= 2 tokens; models that pass the llama_model to init): as a per-head KQ bias inside the flash
++//     attention vec kernel (the kq_bias path of the k-bias patch in qwen2.cpp), K stays quantized:
++//       sum_j A_j (cos(p theta_j) - 1) + B_j sin(p theta_j),
++//       A_j = q_j mu_j + q_{j+h} mu_{j+h}, B_j = q_{j+h} mu_j - q_j mu_{j+h}, h = n_embd_head/2;
++//     the dropped term sum_j A_j is the same for every key of a query (softmax invariant; no attention sinks).
++//     LLAMA_KV_DEBIAS_MU_PATH: "kqbias" (default: u = m q and c'^T u, two ops per layer), "fused" (one
++//     GGML_OP_KQ_ROPE_BIAS per layer, c' in F16 scaled by 2^8) or "kadd" (the path below, also for decode).
++//   other graphs (prefill), and models that do not pass the llama_model: K is rebuilt in F16 as
++//     dequant(K) + H R(p) mu before attention ("kadd" path, consumed in llm_graph_context::build_attn).
++// With the llama_model, mu, the pair matrices m and the unit vectors are persistent weight-like tensors (no per-step
++// upload); without it (and while the model weights are not allocated, e.g. memory fitting) mu is a graph input.
++// Flash attention only, single KV stream only; the KQ bias paths need NEOX RoPE over the whole head.
++//
++// File layout (little endian): char magic[4] = "KVMU", int32 version = 1, int32 n_layer, int32 n_head_kv,
++// int32 n_embd_head, then float32 mu[n_layer][n_head_kv][n_embd_head].
++
++#include "llama-graph.h"
++#include "llama-impl.h"
++#include "llama-model.h"
++#include "llama-kv-cache.h"
++
++#include "ggml.h"
++#include "ggml-alloc.h"
++#include "ggml-backend.h"
++
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <map>
++#include <memory>
++#include <mutex>
++#include <string>
++#include <utility>
++#include <vector>
++
++namespace kv_mu {
++
++struct mu_file {
++    int32_t            n_layer     = 0;
++    int32_t            n_head_kv   = 0;
++    int32_t            n_embd_head = 0;
++    std::vector<float> data; // [n_layer][n_head_kv][n_embd_head]
++};
++
++// path from LLAMA_KV_DEBIAS_MU, or nullptr when the feature is off
++inline const char * path() {
++    const char * p = getenv("LLAMA_KV_DEBIAS_MU");
++    return p && p[0] ? p : nullptr;
++}
++
++// add-back path of decode graphs
++enum dec_path { DEC_KADD, DEC_KQBIAS, DEC_FUSED, DEC_KQPOS };
++
++inline dec_path decode_path() {
++    static const dec_path res = [] {
++        const char * e = getenv("LLAMA_KV_DEBIAS_MU_PATH");
++        if (e == nullptr || e[0] == 0 || strcmp(e, "kqbias") == 0) {
++            return DEC_KQBIAS;
++        }
++        if (strcmp(e, "fused") == 0) {
++            return DEC_FUSED;
++        }
++        if (strcmp(e, "kqpos") == 0) {
++            return DEC_KQPOS;
++        }
++        GGML_ASSERT(strcmp(e, "kadd") == 0 && "LLAMA_KV_DEBIAS_MU_PATH: kqbias, fused, kqpos or kadd");
++        return DEC_KADD;
++    }();
++    return res;
++}
++
++// SG1 sink gate (LLAMA_KV_MU_GATE): 0 off; 1 gate (exempt a row when 1 - k.mu/|mu|^2 >= 0.5, i.e. when centring
++// would lengthen it); "centre" / "exempt": every row centred / exempt through the gate code (test modes)
++enum gate_mode { GATE_OFF, GATE_ON, GATE_CENTRE, GATE_EXEMPT };
++
++inline gate_mode gate_setting() {
++    static const gate_mode res = [] {
++        const char * e = getenv("LLAMA_KV_MU_GATE");
++        if (e == nullptr || e[0] == 0 || strcmp(e, "0") == 0) {
++            return GATE_OFF;
++        }
++        if (strcmp(e, "centre") == 0) {
++            return GATE_CENTRE;
++        }
++        if (strcmp(e, "exempt") == 0) {
++            return GATE_EXEMPT;
++        }
++        GGML_ASSERT(strcmp(e, "1") == 0 && "LLAMA_KV_MU_GATE: 0, 1, centre or exempt");
++        return GATE_ON;
++    }();
++    return res;
++}
++
++// scale of the F16 c' table of the fused path: 2^8 keeps its small entries out of the F16 subnormal range
++constexpr float fused_c_scale = 256.0f;
++
++// loaded once per process; aborts on a malformed file
++inline const mu_file & load(const char * fname) {
++    static std::mutex  mtx;
++    static std::string loaded_name;
++    static mu_file     mf;
++
++    std::lock_guard<std::mutex> lock(mtx);
++    if (loaded_name == fname) {
++        return mf;
++    }
++    FILE * f = fopen(fname, "rb");
++    GGML_ASSERT(f != nullptr && "LLAMA_KV_DEBIAS_MU: cannot open file");
++    char    magic[4];
++    int32_t hdr[4];
++    GGML_ASSERT(fread(magic, 1, 4, f) == 4 && memcmp(magic, "KVMU", 4) == 0 && "LLAMA_KV_DEBIAS_MU: bad magic");
++    GGML_ASSERT(fread(hdr, sizeof(int32_t), 4, f) == 4 && hdr[0] == 1 && "LLAMA_KV_DEBIAS_MU: bad version");
++    mu_file r;
++    r.n_layer     = hdr[1];
++    r.n_head_kv   = hdr[2];
++    r.n_embd_head = hdr[3];
++    const size_t n = size_t(r.n_layer)*r.n_head_kv*r.n_embd_head;
++    r.data.resize(n);
++    GGML_ASSERT(fread(r.data.data(), sizeof(float), n, f) == n && "LLAMA_KV_DEBIAS_MU: short file");
++    fclose(f);
++    LLAMA_LOG_INFO("%s: KV de-offset with calibrated mu from %s: %d layers, %d kv heads, head dim %d\n",
++            __func__, fname, r.n_layer, r.n_head_kv, r.n_embd_head);
++    mf          = std::move(r);
++    loaded_name = fname;
++    return mf;
++}
++
++// graph input holding all of mu as one F32 tensor [n_embd_head, n_head_kv, n_layer]
++class input_mu : public llm_graph_input_i {
++public:
++    explicit input_mu(const mu_file & mf) : mf(mf) {}
++
++    void set_input(const llama_ubatch * ubatch) override {
++        GGML_UNUSED(ubatch);
++        if (mu && mu->buffer) {
++            ggml_backend_tensor_set(mu, mf.data.data(), 0, ggml_nbytes(mu));
++        }
++    }
++
++    bool can_reuse(const llm_graph_params & params) override {
++        GGML_UNUSED(params);
++        return true;
++    }
++
++    ggml_tensor *   mu = nullptr;
++    const mu_file & mf;
++};
++
++// persistent copies of mu and of the derived tensors, allocated like weights (one buffer per layer buffer type)
++struct plan {
++    std::vector<ggml_tensor *> mu;              // per layer: F32 [n_embd_head, n_head_kv]
++    std::vector<ggml_tensor *> m;               // per layer: F32 [n_embd_head, n_embd_head, n_head_kv], u = m q
++    std::vector<ggml_tensor *> half_mu2;          // per layer: F32 [1, n_head_kv] = |mu|^2 / 2 (SG1 gate)
++    ggml_tensor *              unit     = nullptr; // F32 [n_embd_head] = [1..1, 0..0]
++    ggml_tensor *              unit_c16 = nullptr; // F32 [n_embd_head] = [2^8..2^8, 0..0] (fused path)
++
++    std::vector<ggml_backend_buffer_type_t> bufts; // layer buffer types the plan was built for
++    std::vector<ggml_context *>             ctxs;
++    std::vector<ggml_backend_buffer_t>      bufs;
++};
++
++inline void plan_free(plan & pl) {
++    for (ggml_backend_buffer_t buf : pl.bufs) {
++        ggml_backend_buffer_free(buf);
++    }
++    for (ggml_context * ctx : pl.ctxs) {
++        ggml_free(ctx);
++    }
++    pl = plan();
++}
++
++inline void plan_build(plan & pl, const llama_model & model, const mu_file & mf) {
++    const int64_t n_layer = mf.n_layer;
++    const int64_t n_head_kv = mf.n_head_kv;
++    const int64_t D    = mf.n_embd_head;
++    const int64_t half = D/2;
++
++    std::map<ggml_backend_buffer_type_t, ggml_context *> ctx_map;
++    const auto ctx_for_buft = [&](ggml_backend_buffer_type_t buft) -> ggml_context * {
++        auto it = ctx_map.find(buft);
++        if (it != ctx_map.end()) {
++            return it->second;
++        }
++        ggml_init_params params = {
++            /*.mem_size   =*/ (3*size_t(n_layer) + 2)*ggml_tensor_overhead(),
++            /*.mem_buffer =*/ NULL,
++            /*.no_alloc   =*/ true,
++        };
++        ggml_context * ctx = ggml_init(params);
++        GGML_ASSERT(ctx != nullptr);
++        ctx_map[buft] = ctx;
++        pl.ctxs.push_back(ctx);
++        return ctx;
++    };
++
++    pl.mu.assign(n_layer, nullptr);
++    pl.m.assign(n_layer, nullptr);
++    pl.half_mu2.assign(n_layer, nullptr);
++    pl.bufts.assign(n_layer, nullptr);
++    for (int64_t il = 0; il < n_layer; ++il) {
++        pl.bufts[il] = model.select_buft(il);
++        ggml_context * ctx = ctx_for_buft(pl.bufts[il]);
++        pl.mu[il] = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, D, n_head_kv);
++        pl.m[il]  = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, D, n_head_kv);
++        ggml_format_name(pl.mu[il], "kv_mu-%d", int(il));
++        ggml_format_name(pl.m[il],  "kv_mu_m-%d", int(il));
++        pl.half_mu2[il] = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 1, n_head_kv);
++        ggml_format_name(pl.half_mu2[il], "kv_mu_half2-%d", int(il));
++    }
++    // the per-graph c' table is built next to the last layer: with partial offload the last layers are offloaded
++    {
++        ggml_context * ctx = ctx_for_buft(pl.bufts[n_layer - 1]);
++        pl.unit     = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, D);
++        pl.unit_c16 = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, D);
++        ggml_set_name(pl.unit,     "kv_mu_unit");
++        ggml_set_name(pl.unit_c16, "kv_mu_unit_c16");
++    }
++
++    for (const auto & it : ctx_map) {
++        ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(it.second, it.first);
++        GGML_ASSERT(buf != nullptr && "LLAMA_KV_DEBIAS_MU: failed to allocate the plan buffer");
++        ggml_backend_buffer_set_usage(buf, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
++        pl.bufs.push_back(buf);
++    }
++
++    std::vector<float> m(D*D*n_head_kv);
++    for (int64_t il = 0; il < n_layer; ++il) {
++        const float * mul = mf.data.data() + il*n_head_kv*D;
++        ggml_backend_tensor_set(pl.mu[il], mul, 0, ggml_nbytes(pl.mu[il]));
++
++        // u = m q (ggml_mul_mat: u_i = sum_k m[k + i*D] q_k): u_j = A_j, u_{j+h} = B_j
++        std::fill(m.begin(), m.end(), 0.0f);
++        for (int64_t h = 0; h < n_head_kv; ++h) {
++            float * mh = m.data() + h*D*D;
++            for (int64_t j = 0; j < half; ++j) {
++                const float b1 = mul[h*D + j];
++                const float b2 = mul[h*D + j + half];
++                mh[j*D + j]                 =  b1; // A_j = q_j b_j + q_{j+h} b_{j+h}
++                mh[j*D + j + half]          =  b2;
++                mh[(j + half)*D + j]        = -b2; // B_j = q_{j+h} b_j - q_j b_{j+h}
++                mh[(j + half)*D + j + half] =  b1;
++            }
++        }
++        ggml_backend_tensor_set(pl.m[il], m.data(), 0, ggml_nbytes(pl.m[il]));
++
++        std::vector<float> h2(n_head_kv);
++        for (int64_t h = 0; h < n_head_kv; ++h) {
++            double s = 0.0;
++            for (int64_t k = 0; k < D; ++k) {
++                s += double(mul[h*D + k])*double(mul[h*D + k]);
++            }
++            h2[h] = float(0.5*s);
++        }
++        ggml_backend_tensor_set(pl.half_mu2[il], h2.data(), 0, ggml_nbytes(pl.half_mu2[il]));
++    }
++
++    std::vector<float> e(D, 0.0f);
++    std::fill(e.begin(), e.begin() + half, 1.0f);
++    ggml_backend_tensor_set(pl.unit, e.data(), 0, ggml_nbytes(pl.unit));
++    std::fill(e.begin(), e.begin() + half, fused_c_scale);
++    ggml_backend_tensor_set(pl.unit_c16, e.data(), 0, ggml_nbytes(pl.unit_c16));
++}
++
++// note: cached per (model address, mu file name) for the lifetime of the process (experimental limitation, as the
++//       k-bias plan in qwen2.cpp); rebuilt when a layer's buffer type changes
++inline const plan & get_plan(const llama_model & model, const mu_file & mf, const char * fname) {
++    static std::mutex mtx;
++    static std::map<std::pair<const llama_model *, std::string>, plan> plans;
++
++    std::lock_guard<std::mutex> lock(mtx);
++    plan & pl = plans[{&model, std::string(fname)}];
++    bool ok = int64_t(pl.mu.size()) == mf.n_layer;
++    for (size_t il = 0; ok && il < pl.bufts.size(); ++il) {
++        ok = pl.bufts[il] == model.select_buft(il);
++    }
++    if (!ok) {
++        plan_free(pl);
++        plan_build(pl, model, mf);
++    }
++    return pl;
++}
++
++// per-graph state: build once before the layer loop, then call sub() and add_back() per layer
++struct state {
++    const plan *  pl     = nullptr; // persistent tensors, or nullptr (mu is then the graph input below)
++    ggml_tensor * mu     = nullptr; // F32 [n_embd_head, n_head_kv, n_layer] graph input (only without pl)
++    ggml_tensor * kv_pos = nullptr; // I32 [n_kv]
++    ggml_tensor * c      = nullptr; // KQ bias paths: c' = R(p) e - e, F32 [n_embd_head, n_kv] (kqbias) or
++                                    //                2^8 c' as F16 [n_kv, n_embd_head] (fused)
++    int64_t       n_kv   = 0;
++    dec_path      path   = DEC_KADD; // add-back path of this graph
++    gate_mode     gate   = GATE_OFF; // SG1
++    const llm_graph_input_attn_kv * inp = nullptr; // for the K indices and the flag tensor (SG1)
++    mutable ggml_tensor * gate_cur = nullptr;     // F32 [1, n_head_kv, n_tokens] of the layer last passed to sub()
++};
++
++// returns false (and leaves st empty) when the feature is off; model == nullptr keeps the graph-input mu and the kadd
++// path for every graph
++inline bool init(state & st, llm_graph_context & g, llm_graph_input_attn_kv * inp_attn,
++        int64_t n_layer, int64_t n_head_kv, int64_t n_embd_head, const llama_model * model = nullptr) {
++    const char * fname = path();
++    if (fname == nullptr || g.cparams.training) {
++        return false;
++    }
++    GGML_ASSERT(g.cparams.flash_attn && "LLAMA_KV_DEBIAS_MU requires flash attention (-fa on)");
++    const mu_file & mf = load(fname);
++    GGML_ASSERT(mf.n_layer == n_layer && mf.n_head_kv == n_head_kv && mf.n_embd_head == n_embd_head &&
++            "LLAMA_KV_DEBIAS_MU: shape does not match the model");
++
++    const ggml_tensor * kq_mask = inp_attn->get_kq_mask();
++    GGML_ASSERT(kq_mask->ne[3] == 1 && "LLAMA_KV_DEBIAS_MU requires a single KV stream");
++    st.n_kv = kq_mask->ne[0];
++
++    st.kv_pos = ggml_new_tensor_1d(g.ctx0, GGML_TYPE_I32, st.n_kv);
++    ggml_set_input(st.kv_pos);
++    inp_attn->self_kv_pos = st.kv_pos;
++
++    // persistent tensors need allocated weights (no plan while the model is only measured, e.g. memory fitting)
++    const bool weights_allocated = model != nullptr && !model->layers.empty() && model->layers[0].wo != nullptr &&
++            model->layers[0].wo->buffer != nullptr;
++    if (!weights_allocated) {
++        auto inp = std::make_unique<input_mu>(mf);
++        inp->mu = ggml_new_tensor_3d(g.ctx0, GGML_TYPE_F32, n_embd_head, n_head_kv, n_layer);
++        ggml_set_input(inp->mu);
++        st.mu = inp->mu;
++        g.res->add_input(std::move(inp));
++        return true;
++    }
++    st.pl = &get_plan(*model, mf, fname);
++
++    const bool kq_bias_ok = g.n_tokens <= 2 && g.rope_type == LLAMA_ROPE_TYPE_NEOX && g.n_rot == n_embd_head;
++    st.path = kq_bias_ok ? decode_path() : DEC_KADD;
++    if (st.path == DEC_KQPOS && (g.ext_factor != 0.0f || g.attn_factor != 1.0f)) {
++        st.path = DEC_KQBIAS; // the position form evaluates plain NEOX rope only (no YaRN)
++    }
++    st.gate = gate_setting();
++    st.inp  = inp_attn;
++    if (st.gate != GATE_OFF) {
++        GGML_ASSERT((st.path == DEC_KQPOS || st.path == DEC_KADD) &&
++                "LLAMA_KV_MU_GATE: decode graphs need the kqpos path (LLAMA_KV_DEBIAS_MU_PATH=kqpos, plain NEOX rope, no YaRN); prefill uses kadd");
++    }
++    if (st.path == DEC_KQPOS) {
++        return true; // c' is evaluated inside the per-layer op from kv_pos (no table)
++    }
++    if (st.path != DEC_KADD) {
++        ggml_tensor * unit = st.path == DEC_FUSED ? st.pl->unit_c16 : st.pl->unit;
++        ggml_tensor * e  = ggml_repeat_4d(g.ctx0, unit, n_embd_head, 1, st.n_kv, 1);
++        ggml_tensor * cs = ggml_rope_ext(g.ctx0, e, st.kv_pos, nullptr, g.n_rot, g.rope_type, g.n_ctx_orig,
++                g.freq_base, g.freq_scale, g.ext_factor, g.attn_factor, g.beta_fast, g.beta_slow);
++        st.c = ggml_reshape_2d(g.ctx0, ggml_sub(g.ctx0, cs, e), n_embd_head, st.n_kv);
++        if (st.path == DEC_FUSED) {
++            // [n_kv, n_embd_head] F16, keys contiguous (the transposed F16 copy has a tiled fast path on CUDA)
++            st.c = ggml_cont(g.ctx0, ggml_transpose(g.ctx0, ggml_cast(g.ctx0, st.c, GGML_TYPE_F16)));
++        }
++        g.cb(st.c, "kv_mu_c", -1);
++    }
++    return true;
++}
++
++inline ggml_tensor * layer_mu(const state & st, ggml_context * ctx, int64_t il) {
++    if (st.pl) {
++        return st.pl->mu[il];
++    }
++    return ggml_view_3d(ctx, st.mu, st.mu->ne[0], st.mu->ne[1], 1, st.mu->nb[1], st.mu->nb[2], il*st.mu->nb[2]);
++}
++
++// K [n_embd_head, n_head_kv, n_tokens] before RoPE -> K - mu_l
++inline ggml_tensor * sub(const state & st, ggml_context * ctx, ggml_tensor * k, int64_t il) {
++    if (st.gate == GATE_OFF || st.pl == nullptr) {
++        return ggml_sub(ctx, k, layer_mu(st, ctx, il));
++    }
++    // SG1: g = 1 (centre) when k.mu > |mu|^2 / 2, i.e. z = 1 - k.mu/|mu|^2 < 0.5; else 0 (exempt, kept uncentred)
++    ggml_tensor * mu  = st.pl->mu[il];                                  // [D, n_head_kv]
++    // SG2: two fused kernels (gate, apply) instead of mul, sum_rows, sub, step, repeat, mul, sub
++    const int force = st.gate == GATE_ON ? -1 : (st.gate == GATE_CENTRE ? 1 : 0);
++    ggml_tensor * gt = ggml_kv_mu_gate(ctx, k, mu, st.pl->half_mu2[il], force); // [1, n_head_kv, n_tokens]
++    st.gate_cur = gt;
++    return ggml_kv_mu_apply(ctx, k, mu, gt);
++}
++
++// SG1: the flags of all n_kv cells of layer il after this batch's flags are written (the view depends on the
++// set_rows node, so the write is ordered before every reader); F32 [n_head_kv, n_kv]
++inline ggml_tensor * gate_view(const state & st, ggml_context * ctx, int64_t il) {
++    GGML_ASSERT(st.gate_cur != nullptr && st.inp != nullptr);
++    ggml_tensor * kf = st.inp->mctx->get_kflag(il);
++    GGML_ASSERT(kf != nullptr && "LLAMA_KV_MU_GATE: the KV cache has no flag tensor");
++    const int64_t H = st.gate_cur->ne[1];
++    const int64_t T = st.gate_cur->ne[2];
++    ggml_tensor * all = ggml_set_rows(ctx, kf, ggml_reshape_2d(ctx, st.gate_cur, H, T), st.inp->get_k_idxs());
++    st.gate_cur = nullptr;
++    return ggml_view_2d(ctx, all, H, st.n_kv, all->nb[1], 0);
++}
++
++// R(p) mu_l for every KV cell, with the same RoPE parameters as K; consumed by build_attn as kv_debias_k_add
++inline ggml_tensor * rope_mu(const state & st, ggml_context * ctx, int64_t il, int n_rot, int rope_type,
++        int n_ctx_orig, float freq_base, float freq_scale, float ext_factor, float attn_factor,
++        float beta_fast, float beta_slow) {
++    ggml_tensor * m = layer_mu(st, ctx, il);
++    m = ggml_repeat_4d(ctx, m, m->ne[0], m->ne[1], st.n_kv, 1);
++    return ggml_rope_ext(ctx, m, st.kv_pos, nullptr, n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++            ext_factor, attn_factor, beta_fast, beta_slow);
++}
++
++// sets the add-back of layer il for the next build_attn call: q is the post-RoPE query [n_embd_head, n_head, n_tokens]
++// before any Hadamard rotation (H is orthonormal, so the score term is unchanged)
++inline void add_back(const state & st, llm_graph_context & g, ggml_tensor * q, int64_t il) {
++    ggml_context * ctx = g.ctx0;
++    if (st.path == DEC_KADD) {
++        g.kv_debias_k_add = rope_mu(st, ctx, il, g.n_rot, g.rope_type, g.n_ctx_orig, g.freq_base, g.freq_scale,
++                g.ext_factor, g.attn_factor, g.beta_fast, g.beta_slow);
++        if (st.gate != GATE_OFF && st.pl != nullptr) {                  // SG1: k_add = g * R(p) mu
++            ggml_tensor * gv = gate_view(st, ctx, il);                  // [n_head_kv, n_kv]
++            g.kv_debias_k_add = ggml_mul(ctx, g.kv_debias_k_add, ggml_reshape_3d(ctx, gv, 1, gv->ne[0], gv->ne[1]));
++        }
++        g.cb(g.kv_debias_k_add, "kv_mu_rb", il);
++        return;
++    }
++    const int64_t D        = q->ne[0];
++    const int64_t n_head   = q->ne[1];
++    const int64_t n_tokens = q->ne[2];
++    ggml_tensor * kqb;
++    if (st.path == DEC_KQPOS) {
++        kqb = st.gate != GATE_OFF
++            ? ggml_kq_rope_bias_pos_gated(ctx, q, st.pl->mu[il], st.kv_pos, gate_view(st, ctx, il), g.freq_base,
++                    g.freq_scale, 1.0f)
++            : ggml_kq_rope_bias_pos(ctx, q, st.pl->mu[il], st.kv_pos, g.freq_base, g.freq_scale, 1.0f);  // [n_kv, n_tokens, n_head]
++    } else if (st.path == DEC_FUSED) {
++        kqb = ggml_kq_rope_bias(ctx, q, st.pl->mu[il], st.c, 1.0f/fused_c_scale);              // [n_kv, n_tokens, n_head]
++    } else {
++        ggml_tensor * q_t = ggml_permute(ctx, q, 0, 2, 1, 3);                                    // [D, n_tokens, n_head]
++        ggml_tensor * u   = ggml_mul_mat(ctx, st.pl->m[il], q_t);                                // [D, n_tokens, n_head]
++        kqb = ggml_mul_mat(ctx, st.c, ggml_reshape_2d(ctx, u, D, n_tokens*n_head));              // [n_kv, n_tokens*n_head]
++        kqb = ggml_reshape_3d(ctx, kqb, st.n_kv, n_tokens, n_head);
++    }
++    g.cb(kqb, "kv_mu_kqb", il);
++    g.kv_debias_kqb = kqb;
++}
++
++} // namespace kv_mu
+diff --git a/src/models/qwen2.cpp b/src/models/qwen2.cpp
+--- a/src/models/qwen2.cpp
++++ b/src/models/qwen2.cpp
+@@ -1,4 +1,345 @@
+ #include "models.h"
++#include "kv-mu.h"
++#include "llama-impl.h"
++#include "llama-model.h"
++
++#include "ggml-alloc.h"
++#include "ggml-backend.h"
++
++#include <algorithm>
++#include <cstdlib>
++#include <cstring>
++#include <mutex>
++#include <numeric>
++#include <map>
++#include <utility>
++
++// KV de-offset (experimental, env LLAMA_KV_DEBIAS=1): the selected RoPE pairs of the k_proj bias b are removed from K
++// before RoPE and KV quantization, and their score contribution q . R(p) b is added back exactly:
++//   flash attention, <= 2 queries per step: per-head KQ bias sum_j A_j (cos(p theta_j) - 1) + B_j sin(p theta_j),
++//                                           A_j = q_j b_j + q_{j+h} b_{j+h}, B_j = q_{j+h} b_j - q_j b_{j+h}; the
++//                                           dropped term sum_j A_j is the same for every key of a query (softmax
++//                                           invariant, valid because the model has no attention sinks)
++//   flash attention, larger batches:        K is rebuilt as dequant(K) + H R(p) b in F16
++//   no flash attention:                     kq_b = q . R(p) b
++// LLAMA_KV_DEBIAS_PAIRS: "auto" (default: per kv head, the fewest pairs holding 99% of the bias energy, union over
++// heads), "all", or an energy fraction in (0, 1]. LLAMA_KV_DEBIAS_PATH: force "kqbias", "kadd" or "kqb" (testing).
++// LLAMA_KV_DEBIAS_FUSED=1 (experimental): the per-head KQ bias is one GGML_OP_KQ_ROPE_BIAS per layer (u computed per
++// pair from q and the bias, c' stored as F16 scaled by 2^8 with the keys contiguous) instead of u = m q and c'^T u.
++namespace {
++
++bool kv_debias_fused() {
++    static const bool fused = getenv("LLAMA_KV_DEBIAS_FUSED") && atoi(getenv("LLAMA_KV_DEBIAS_FUSED")) != 0;
++    return fused;
++}
++
++// scale of c' for the fused op: 2^8 keeps the small entries of the F16 c' out of the subnormal range
++constexpr float kv_debias_fused_c_scale = 256.0f;
++
++struct kv_debias_layer {
++    int64_t            n_pairs = 0;
++    std::vector<float> m;    // [n_embd_head, n_embd_head, n_head_kv]: u = m q, u_j = A_j, u_{j+h} = B_j (zero outside S)
++    std::vector<float> bsub; // [n_embd_head, n_head_kv]: k bias restricted to the selected pairs
++
++    // persistent copies of m and bsub, allocated like weights; nullptr in a placeholder plan
++    ggml_tensor * m_t    = nullptr;
++    ggml_tensor * bsub_t = nullptr;
++};
++
++struct kv_debias_plan {
++    std::vector<kv_debias_layer> layers;
++    int64_t n_embd_head = 0;
++    int64_t n_head_kv   = 0;
++
++    ggml_tensor * unit_t = nullptr; // F32 [n_embd_head] = [1..1, 0..0], persistent, next to the last layer with pairs
++
++    std::vector<ggml_context *>         ctxs;
++    std::vector<ggml_backend_buffer_t> bufs;
++};
++
++// k bias tensor of a layer and the offset of its k part, or nullptr
++const ggml_tensor * kv_debias_bias_tensor(const llama_layer & layer, int64_t n_embd_head, int64_t n_head, int64_t & offs) {
++    offs = 0;
++    if (layer.wk_b != nullptr) {
++        return layer.wk_b;
++    }
++    if (layer.wqkv_b != nullptr) {
++        offs = n_embd_head*n_head; // fused bias layout [q | k | v]
++        return layer.wqkv_b;
++    }
++    return nullptr;
++}
++
++std::vector<float> kv_debias_get_bias(const llama_layer & layer, int64_t n_embd_head, int64_t n_head, int64_t n_head_kv) {
++    const int64_t n = n_embd_head*n_head_kv;
++
++    int64_t offs = 0;
++    const ggml_tensor * t = kv_debias_bias_tensor(layer, n_embd_head, n_head, offs);
++
++    std::vector<float> res;
++    if (t == nullptr) {
++        return res;
++    }
++    res.resize(n, 0.0f);
++    if (t->data == nullptr) {
++        return res; // weights not allocated (e.g. memory fitting with no_alloc): placeholder values
++    }
++    if (t->type == GGML_TYPE_F32) {
++        ggml_backend_tensor_get(t, res.data(), offs*sizeof(float), n*sizeof(float));
++    } else {
++        GGML_ASSERT(t->type == GGML_TYPE_F16);
++        std::vector<ggml_fp16_t> tmp(n);
++        ggml_backend_tensor_get(t, tmp.data(), offs*sizeof(ggml_fp16_t), n*sizeof(ggml_fp16_t));
++        ggml_fp16_to_fp32_row(tmp.data(), res.data(), n);
++    }
++    return res;
++}
++
++kv_debias_plan kv_debias_make_plan(const llama_model & model, int64_t n_embd_head, int64_t n_head, int64_t n_head_kv, bool placeholder) {
++    bool  all  = placeholder; // without the weights use all pairs, the largest graph
++    float frac = 0.99f;
++    if (const char * e = getenv("LLAMA_KV_DEBIAS_PAIRS")) {
++        if (strcmp(e, "all") == 0) {
++            all = true;
++        } else if (strcmp(e, "auto") != 0) {
++            frac = (float) atof(e);
++        }
++    }
++    GGML_ASSERT(all || (frac > 0.0f && frac <= 1.0f));
++
++    const int64_t D    = n_embd_head;
++    const int64_t half = D/2;
++
++    kv_debias_plan plan;
++    plan.layers.resize(model.layers.size());
++    plan.n_embd_head = D;
++    plan.n_head_kv   = n_head_kv;
++
++    int     n_bias_layers = 0;
++    int64_t n_pairs_sum   = 0;
++    double  kept_sum      = 0.0;
++    double  kept_min      = 1.0;
++
++    for (size_t il = 0; il < model.layers.size(); ++il) {
++        const std::vector<float> b = kv_debias_get_bias(model.layers[il], D, n_head, n_head_kv);
++        if (b.empty()) {
++            continue;
++        }
++
++        std::vector<bool> sel(half, all);
++        if (!all) {
++            for (int64_t h = 0; h < n_head_kv; ++h) {
++                const float * bh = b.data() + h*D;
++                std::vector<double> e(half);
++                double tot = 0.0;
++                for (int64_t j = 0; j < half; ++j) {
++                    e[j] = double(bh[j])*bh[j] + double(bh[j + half])*bh[j + half];
++                    tot += e[j];
++                }
++                std::vector<int64_t> ord(half);
++                std::iota(ord.begin(), ord.end(), 0);
++                std::sort(ord.begin(), ord.end(), [&](int64_t x, int64_t y) { return e[x] > e[y]; });
++                double cum = 0.0;
++                for (const int64_t j : ord) {
++                    if (cum >= frac*tot) {
++                        break;
++                    }
++                    sel[j] = true;
++                    cum += e[j];
++                }
++            }
++        }
++
++        std::vector<int64_t> pairs;
++        for (int64_t j = 0; j < half; ++j) {
++            if (sel[j]) {
++                pairs.push_back(j);
++            }
++        }
++
++        kv_debias_layer & L = plan.layers[il];
++        const int64_t ns = pairs.size();
++        L.n_pairs = ns;
++        L.m.assign(D*D*n_head_kv, 0.0f);
++        L.bsub.assign(D*n_head_kv, 0.0f);
++
++        for (const int64_t j : pairs) {
++            for (int64_t h = 0; h < n_head_kv; ++h) {
++                const float b1 = b[h*D + j];
++                const float b2 = b[h*D + j + half];
++                float * mh = L.m.data() + h*D*D;
++                mh[j*D + j]                 =  b1; // A_j = q_j b_j + q_{j+h} b_{j+h}
++                mh[j*D + j + half]          =  b2;
++                mh[(j + half)*D + j]        = -b2; // B_j = q_{j+h} b_j - q_j b_{j+h}
++                mh[(j + half)*D + j + half] =  b1;
++                L.bsub[h*D + j]        = b1;
++                L.bsub[h*D + j + half] = b2;
++            }
++        }
++
++        double e_all  = 0.0;
++        double e_kept = 0.0;
++        for (int64_t i = 0; i < D*n_head_kv; ++i) {
++            e_all  += double(b[i])*b[i];
++            e_kept += double(L.bsub[i])*L.bsub[i];
++        }
++        const double kept = e_all > 0.0 ? e_kept/e_all : 1.0;
++        n_bias_layers++;
++        n_pairs_sum += ns;
++        kept_sum    += kept;
++        kept_min     = std::min(kept_min, kept);
++    }
++
++    if (placeholder) {
++        return plan;
++    }
++    if (n_bias_layers > 0) {
++        LLAMA_LOG_INFO("%s: KV de-offset: %d layers with k bias, pairs/layer %.1f of %lld, kept energy mean %.4f min %.4f\n",
++                __func__, n_bias_layers, double(n_pairs_sum)/n_bias_layers, (long long) half, kept_sum/n_bias_layers, kept_min);
++    } else {
++        LLAMA_LOG_WARN("%s: KV de-offset enabled but the model has no k bias\n", __func__);
++    }
++
++    return plan;
++}
++
++// copy the plan tensors to persistent buffers (one per layer buffer type, flagged as weights) so that the graphs use
++// them like weights instead of uploading them as graph inputs at every step (each input upload is a synchronous copy)
++void kv_debias_upload(kv_debias_plan & plan, const llama_model & model) {
++    const int64_t D = plan.n_embd_head;
++
++    std::map<ggml_backend_buffer_type_t, ggml_context *> ctx_map;
++    const auto ctx_for_buft = [&](ggml_backend_buffer_type_t buft) -> ggml_context * {
++        auto it = ctx_map.find(buft);
++        if (it != ctx_map.end()) {
++            return it->second;
++        }
++        ggml_init_params params = {
++            /*.mem_size   =*/ (2*plan.layers.size() + 1)*ggml_tensor_overhead(),
++            /*.mem_buffer =*/ NULL,
++            /*.no_alloc   =*/ true,
++        };
++        ggml_context * ctx = ggml_init(params);
++        GGML_ASSERT(ctx != nullptr);
++        ctx_map[buft] = ctx;
++        plan.ctxs.push_back(ctx);
++        return ctx;
++    };
++
++    // unit (and so the per-graph c' computation) goes next to the last layer with pairs: with partial offload the
++    // last layers are the offloaded ones
++    for (size_t il = plan.layers.size(); il-- > 0;) {
++        kv_debias_layer & L = plan.layers[il];
++        if (L.n_pairs == 0) {
++            continue;
++        }
++        ggml_context * ctx = ctx_for_buft(model.select_buft(il));
++        L.m_t    = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, D, plan.n_head_kv);
++        L.bsub_t = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, plan.n_head_kv, 1);
++        ggml_format_name(L.m_t,    "kv_debias_m-%zu",    il);
++        ggml_format_name(L.bsub_t, "kv_debias_bsub-%zu", il);
++        if (plan.unit_t == nullptr) {
++            plan.unit_t = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, D);
++            ggml_set_name(plan.unit_t, "kv_debias_unit");
++        }
++    }
++
++    for (const auto & it : ctx_map) {
++        ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(it.second, it.first);
++        GGML_ASSERT(buf != nullptr && "KV de-offset: failed to allocate the plan buffer");
++        ggml_backend_buffer_set_usage(buf, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
++        plan.bufs.push_back(buf);
++    }
++
++    for (kv_debias_layer & L : plan.layers) {
++        if (L.m_t == nullptr) {
++            continue;
++        }
++        ggml_backend_tensor_set(L.m_t,    L.m.data(),    0, ggml_nbytes(L.m_t));
++        ggml_backend_tensor_set(L.bsub_t, L.bsub.data(), 0, ggml_nbytes(L.bsub_t));
++        std::vector<float>().swap(L.m); // the host copy is no longer needed
++    }
++    if (plan.unit_t != nullptr) {
++        std::vector<float> e(D, 0.0f);
++        std::fill(e.begin(), e.begin() + D/2, kv_debias_fused() ? kv_debias_fused_c_scale : 1.0f);
++        ggml_backend_tensor_set(plan.unit_t, e.data(), 0, ggml_nbytes(plan.unit_t));
++    }
++}
++
++// frees the plan buffers (not called at process exit: backends may be gone by then)
++void kv_debias_free(kv_debias_plan & plan) {
++    for (ggml_backend_buffer_t buf : plan.bufs) {
++        ggml_backend_buffer_free(buf);
++    }
++    for (ggml_context * ctx : plan.ctxs) {
++        ggml_free(ctx);
++    }
++    plan = kv_debias_plan();
++}
++
++// note: cached per (model address, k bias data address) for the lifetime of the process (experimental limitation):
++//       entries are never evicted, so every loaded model keeps its plan buffers (~7 MiB for Qwen2.5-7B), and a
++//       different model with the same shapes loaded at both reused addresses would get the old plan (only shapes are
++//       checked); the clean fix is a plan owned by llama_model. Models whose weights are not allocated (memory
++//       fitting) get a placeholder plan with the same shapes as "all"
++const kv_debias_plan & kv_debias_get_plan(const llama_model & model, int64_t n_embd_head, int64_t n_head, int64_t n_head_kv) {
++    static std::mutex mtx;
++    static std::map<std::pair<const llama_model *, const void *>, kv_debias_plan> plans;
++    static std::map<const llama_model *, kv_debias_plan> placeholders;
++
++    const auto matches = [&](const kv_debias_plan & plan) {
++        return plan.layers.size() == model.layers.size() && plan.n_embd_head == n_embd_head && plan.n_head_kv == n_head_kv;
++    };
++
++    const void * key = nullptr;
++    for (const auto & layer : model.layers) {
++        int64_t offs = 0;
++        if (const ggml_tensor * t = kv_debias_bias_tensor(layer, n_embd_head, n_head, offs)) {
++            key = t->data;
++            break;
++        }
++    }
++
++    std::lock_guard<std::mutex> lock(mtx);
++    if (key == nullptr) {
++        auto & res = placeholders[&model];
++        if (!matches(res)) {
++            res = kv_debias_make_plan(model, n_embd_head, n_head, n_head_kv, true);
++        }
++        return res;
++    }
++    auto & res = plans[{&model, key}];
++    if (!matches(res)) {
++        kv_debias_free(res);
++        res = kv_debias_make_plan(model, n_embd_head, n_head, n_head_kv, false);
++        kv_debias_upload(res, model);
++    }
++    return res;
++}
++
++// plan tensors without a persistent copy (placeholder plans, or unit in a plan without any selected pair) are graph
++// inputs, zeroed here (no correction) in case such a graph is ever computed; normal plans use the persistent tensors,
++// so their only per-step debias input is kv_pos
++class llm_graph_input_kv_debias_zero : public llm_graph_input_i {
++public:
++    void set_input(const llama_ubatch * ubatch) override {
++        GGML_UNUSED(ubatch);
++        for (ggml_tensor * t : tensors) {
++            if (t->buffer) {
++                ggml_backend_tensor_memset(t, 0, 0, ggml_nbytes(t));
++            }
++        }
++    }
++
++    bool can_reuse(const llm_graph_params & params) override {
++        GGML_UNUSED(params);
++        return true;
++    }
++
++    std::vector<ggml_tensor *> tensors;
++};
++
++} // namespace
+ 
+ void llama_model_qwen2::load_arch_hparams(llama_model_loader & ml) {
+     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
+@@ -68,6 +409,67 @@
+ 
+     ggml_tensor * inp_out_ids = build_inp_out_ids();
+ 
++    // KV de-offset setup (see the comment at the top of this file)
++    kv_mu::state dmu;
++    const bool use_mu = kv_mu::init(dmu, *this, inp_attn, n_layer, n_head_kv, n_embd_head, &model);
++    static const bool kv_debias = getenv("LLAMA_KV_DEBIAS") && atoi(getenv("LLAMA_KV_DEBIAS")) != 0;
++    const kv_debias_plan * dplan = kv_debias && !use_mu && !cparams.training ? &kv_debias_get_plan(model, n_embd_head, n_head, n_head_kv) : nullptr;
++
++    int           dpath    = 0; // 1: per-head KQ bias in flash attention, 2: rebuild K, 3: kq_b
++    int64_t       d_n_kv   = 0;
++    ggml_tensor * d_kv_pos = nullptr; // I32 [n_kv]
++    ggml_tensor * d_c      = nullptr; // F32 [n_embd_head, n_kv]: R(p) e - e per KV cell, e = [1..1, 0..0]
++
++    // plan tensor: the persistent copy, or (placeholder plan: weights not allocated, normally only measured; or unit in
++    // a plan without any selected pair, then unused) a zero-filled graph input of the same shape
++    llm_graph_input_kv_debias_zero * d_zero = nullptr;
++    const auto d_plan_tensor = [&](ggml_tensor * t, int64_t ne0, int64_t ne1, int64_t ne2) {
++        if (t != nullptr) {
++            return t;
++        }
++        ggml_tensor * r = ggml_new_tensor_3d(ctx0, GGML_TYPE_F32, ne0, ne1, ne2);
++        ggml_set_input(r);
++        if (d_zero == nullptr) {
++            auto inp = std::make_unique<llm_graph_input_kv_debias_zero>();
++            d_zero = inp.get();
++            res->add_input(std::move(inp));
++        }
++        d_zero->tensors.push_back(r);
++        return r;
++    };
++    if (dplan) {
++        GGML_ASSERT(rope_type == LLAMA_ROPE_TYPE_NEOX);
++        const ggml_tensor * kq_mask = inp_attn->get_kq_mask();
++        GGML_ASSERT(kq_mask->ne[3] == 1 && "LLAMA_KV_DEBIAS requires a single KV stream (unified KV cache)");
++        d_n_kv = kq_mask->ne[0];
++
++        dpath = !cparams.flash_attn ? 3 : (n_tokens <= 2 ? 1 : 2);
++        if (const char * e = getenv("LLAMA_KV_DEBIAS_PATH")) {
++            dpath = strcmp(e, "kqbias") == 0 ? 1 : strcmp(e, "kadd") == 0 ? 2 : strcmp(e, "kqb") == 0 ? 3 : dpath;
++        }
++        GGML_ASSERT((dpath != 1 || cparams.flash_attn) && "LLAMA_KV_DEBIAS_PATH=kqbias requires flash attention");
++
++        d_kv_pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, d_n_kv);
++        ggml_set_input(d_kv_pos);
++        inp_attn->self_kv_pos = d_kv_pos;
++
++        if (dpath == 1) {
++            ggml_tensor * unit = d_plan_tensor(dplan->unit_t, n_embd_head, 1, 1);
++            ggml_tensor * e = ggml_repeat_4d(ctx0, unit, n_embd_head, 1, d_n_kv, 1);
++            ggml_tensor * cs = ggml_rope_ext(
++                    ctx0, e, d_kv_pos, nullptr,
++                    n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                    ext_factor, attn_factor, beta_fast, beta_slow
++                    );
++            d_c = ggml_reshape_2d(ctx0, ggml_sub(ctx0, cs, e), n_embd_head, d_n_kv);
++            if (kv_debias_fused()) {
++                // [n_kv, n_embd_head] F16, keys contiguous (the transposed F16 copy has a tiled fast path on CUDA)
++                d_c = ggml_cont(ctx0, ggml_transpose(ctx0, ggml_cast(ctx0, d_c, GGML_TYPE_F16)));
++            }
++            cb(d_c, "kv_debias_c", -1);
++        }
++    }
++
+     for (int il = 0; il < n_layer; ++il) {
+         ggml_tensor * inpSA = inpL;
+ 
+@@ -83,6 +485,17 @@
+             auto [Qcur, Kcur, Vcur] = build_qkv(model.layers[il], cur,
+                     n_embd_head, n_head, n_head_kv, il);
+ 
++            if (use_mu) {
++                Kcur = kv_mu::sub(dmu, ctx0, Kcur, il);
++            }
++
++            const kv_debias_layer * dl = dplan ? &dplan->layers[il] : nullptr;
++            ggml_tensor * d_bsub = nullptr;
++            if (dl && dl->n_pairs > 0) {
++                d_bsub = d_plan_tensor(dl->bsub_t, n_embd_head, n_head_kv, 1);
++                Kcur = ggml_sub(ctx0, Kcur, d_bsub);
++            }
++
+             Qcur = ggml_rope_ext(
+                     ctx0, Qcur, inp_pos, nullptr,
+                     n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+@@ -95,13 +508,50 @@
+                     ext_factor, attn_factor, beta_fast, beta_slow
+                     );
+ 
++            if (use_mu) {
++                kv_mu::add_back(dmu, *this, Qcur, il);
++            }
++
++            ggml_tensor * kq_b = nullptr;
++            if (d_bsub) {
++                // q is taken before the Hadamard rotation in build_attn; H is orthonormal so q.R(p)b is unchanged
++                if (dpath == 1 && kv_debias_fused()) {
++                    ggml_tensor * kqb = ggml_kq_rope_bias(ctx0, Qcur, d_bsub, d_c, 1.0f/kv_debias_fused_c_scale); // [n_kv, n_tokens, n_head]
++                    cb(kqb, "kv_debias_kqb", il);
++                    kv_debias_kqb = kqb;
++                } else if (dpath == 1) {
++                    // u = m q: u_j = A_j = q_j b_j + q_{j+h} b_{j+h}, u_{j+h} = B_j = q_{j+h} b_j - q_j b_{j+h}
++                    ggml_tensor * m = d_plan_tensor(dl->m_t, n_embd_head, n_embd_head, n_head_kv);
++                    ggml_tensor * q_t = ggml_permute(ctx0, Qcur, 0, 2, 1, 3);                       // [n_embd_head, n_tokens, n_head]
++                    ggml_tensor * u   = ggml_mul_mat(ctx0, m, q_t);                                  // [n_embd_head, n_tokens, n_head]
++                    ggml_tensor * kqb = ggml_mul_mat(ctx0, d_c, ggml_reshape_2d(ctx0, u, n_embd_head, n_tokens*n_head));
++                    kqb = ggml_reshape_3d(ctx0, kqb, d_n_kv, n_tokens, n_head);                      // [n_kv, n_tokens, n_head]
++                    cb(kqb, "kv_debias_kqb", il);
++                    kv_debias_kqb = kqb;
++                } else {
++                    ggml_tensor * q_t = ggml_permute(ctx0, Qcur, 0, 2, 1, 3); // [n_embd_head, n_tokens, n_head]
++                    ggml_tensor * rb = ggml_rope_ext(
++                            ctx0, ggml_repeat_4d(ctx0, d_bsub, n_embd_head, n_head_kv, d_n_kv, 1), d_kv_pos, nullptr,
++                            n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            ); // [n_embd_head, n_head_kv, n_kv] = R(p) b
++                    cb(rb, "kv_debias_rb", il);
++                    if (dpath == 2) {
++                        kv_debias_k_add = rb;
++                    } else {
++                        kq_b = ggml_mul_mat(ctx0, ggml_cont(ctx0, ggml_permute(ctx0, rb, 0, 2, 1, 3)), q_t); // [n_kv, n_tokens, n_head]
++                        cb(kq_b, "kv_debias_kq_b", il);
++                    }
++                }
++            }
++
+             cb(Qcur, "Qcur", il);
+             cb(Kcur, "Kcur", il);
+             cb(Vcur, "Vcur", il);
+ 
+             cur = build_attn(inp_attn,
+                     model.layers[il].wo, model.layers[il].wo_b, model.layers[il].wo_s,
+-                    Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, 1.0f/sqrtf(float(n_embd_head)), il);
++                    Qcur, Kcur, Vcur, kq_b, nullptr, nullptr, 1.0f/sqrtf(float(n_embd_head)), il);
+         }
+         if (il == n_layer - 1 && inp_out_ids) {
+             cur   = ggml_get_rows(ctx0,   cur, inp_out_ids);
+diff --git a/src/models/qwen3.cpp b/src/models/qwen3.cpp
+--- a/src/models/qwen3.cpp
++++ b/src/models/qwen3.cpp
+@@ -1,4 +1,5 @@
+ #include "models.h"
++#include "kv-mu.h"
+ 
+ void llama_model_qwen3::load_arch_hparams(llama_model_loader & ml) {
+     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
+@@ -82,6 +83,10 @@
+ 
+     ggml_tensor * inp_out_ids = build_inp_out_ids();
+ 
++    // KV de-offset with calibrated mu (see kv-mu.h)
++    kv_mu::state dmu;
++    const bool use_mu = kv_mu::init(dmu, *this, inp_attn, n_layer, n_head_kv, n_embd_head, &model);
++
+     for (int il = 0; il < n_layer; ++il) {
+         res->t_layer_inp[il] = inpL;
+ 
+@@ -111,12 +116,20 @@
+             Kcur = build_norm(Kcur, model.layers[il].attn_k_norm, NULL, LLM_NORM_RMS, il);
+             cb(Kcur, "Kcur_normed", il);
+ 
++            if (use_mu) {
++                Kcur = kv_mu::sub(dmu, ctx0, Kcur, il);
++            }
++
+             Kcur = ggml_rope_ext(
+                     ctx0, Kcur, inp_pos, nullptr,
+                     n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+                     ext_factor, attn_factor, beta_fast, beta_slow
+                     );
+ 
++            if (use_mu) {
++                kv_mu::add_back(dmu, *this, Qcur, il);
++            }
++
+             cb(Qcur, "Qcur", il);
+             cb(Kcur, "Kcur", il);
+             cb(Vcur, "Vcur", il);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -8630,6 +8630,187 @@
+     }
+ };
+ 
++// optional per-head KQ bias (KV de-offset): kq += kq_bias, optionally as a permuted view ([n_kv, n_head, n_batch] in memory)
++struct test_flash_attn_ext_kq_bias : public test_flash_attn_ext {
++    const bool kqb_permuted;
++
++    test_flash_attn_ext_kq_bias(bool kqb_permuted, int64_t hs, int64_t nh, std::array<int64_t, 2> nr23, int64_t kv, int64_t nb,
++                                ggml_type type_K, ggml_type type_V)
++        : test_flash_attn_ext(hs, hs, nh, nr23, kv, nb, true, false, 0.0f, 0.0f, GGML_PREC_F32, type_K, type_V),
++          kqb_permuted(kqb_permuted) {}
++
++    std::string vars() override {
++        return test_flash_attn_ext::vars() + ",kq_bias=" + (kqb_permuted ? "permuted" : "contiguous");
++    }
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * out = test_flash_attn_ext::build_graph(ctx);
++        const ggml_tensor * q = out->src[0];
++        ggml_tensor * kqb;
++        if (kqb_permuted) {
++            kqb = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, kv, q->ne[2], q->ne[1], q->ne[3]);
++            ggml_set_name(kqb, "kq_bias");
++            kqb = ggml_permute(ctx, kqb, 0, 2, 1, 3);
++        } else {
++            kqb = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, kv, q->ne[1], q->ne[2], q->ne[3]);
++            ggml_set_name(kqb, "kq_bias");
++        }
++        ggml_flash_attn_ext_add_kq_bias(out, kqb);
++        return out;
++    }
++};
++
++// GGML_OP_KV_MU_GATE (SG2)
++struct test_kv_mu_gate : public test_case {
++    const int64_t D, H, T;
++    const int mode;  // 0 gate, 1 apply
++    const bool perm; // k as a permuted view
++    std::string vars() override {
++        return VARS_TO_STR5(D, H, T, mode, perm);
++    }
++    test_kv_mu_gate(int64_t D = 128, int64_t H = 8, int64_t T = 2, int mode = 0, bool perm = false)
++        : D(D), H(H), T(T), mode(mode), perm(perm) {}
++    void initialize_tensors(ggml_context * ctx) override {
++        std::mt19937 rng(4321);
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != NULL; t = ggml_get_next_tensor(ctx, t)) {
++            if (strcmp(ggml_get_name(t), "half") == 0) {
++                // thresholds spread around the typical dot so that both decisions occur
++                std::vector<float> v(ggml_nelements(t));
++                std::uniform_real_distribution<float> dist(-2.0f, 2.0f);
++                for (auto & x : v) { x = dist(rng); }
++                ggml_backend_tensor_set(t, v.data(), 0, v.size()*sizeof(float));
++            } else if (strcmp(ggml_get_name(t), "g") == 0) {
++                std::vector<float> v(ggml_nelements(t));
++                std::uniform_int_distribution<int> dist(0, 1);
++                for (auto & x : v) { x = (float) dist(rng); }
++                ggml_backend_tensor_set(t, v.data(), 0, v.size()*sizeof(float));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * k;
++        if (perm) {
++            k = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, T, H);
++            ggml_set_name(k, "k");
++            k = ggml_permute(ctx, k, 0, 2, 1, 3); // [D, H, T]
++        } else {
++            k = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, D, H, T);
++            ggml_set_name(k, "k");
++        }
++        ggml_tensor * mu = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, D, H);
++        ggml_set_name(mu, "mu");
++        ggml_tensor * out;
++        if (mode == 0) {
++            ggml_tensor * half = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 1, H);
++            ggml_set_name(half, "half");
++            out = ggml_kv_mu_gate(ctx, k, mu, half, -1);
++        } else {
++            ggml_tensor * g = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, H, T);
++            ggml_set_name(g, "g");
++            out = ggml_kv_mu_apply(ctx, k, mu, g);
++        }
++        ggml_set_name(out, "out");
++        return out;
++    }
++};
++
++// GGML_OP_KQ_ROPE_BIAS
++struct test_kq_rope_bias : public test_case {
++    const ggml_type type_c;
++    const int64_t hs;    // head size
++    const int64_t nh;    // q heads
++    const int64_t nh_kv; // kv heads
++    const int64_t nt;    // tokens
++    const int64_t kv;    // keys
++    const std::array<int64_t, 2> ns; // streams of q and c
++    const bool q_perm;   // q as a permuted view of [hs, nt, nh, ns]
++    const float scale;
++
++    std::string vars() override {
++        return VARS_TO_STR10(type_c, hs, nh, nh_kv, nt, kv, ns, q_perm, scale, gated);
++    }
++
++    uint64_t op_flops(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return 2 * kv * hs * nh * nt * ns[0];
++    }
++
++    // positions of the position form: unordered, up to pos_max - 1 (cells of a cache are not sorted)
++    int64_t pos_max = 32768;
++    bool gated = false; // SG1: position form with a gate tensor
++
++    void initialize_tensors(ggml_context * ctx) override {
++        std::mt19937 rng(1234);
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != NULL; t = ggml_get_next_tensor(ctx, t)) {
++            if (strcmp(ggml_get_name(t), "gate") == 0) { // SG1: random 0 / 1 flags, about a third exempt
++                std::vector<float> g(ggml_nelements(t));
++                std::uniform_int_distribution<int> dist(0, 2);
++                for (auto & x : g) {
++                    x = dist(rng) == 0 ? 0.0f : 1.0f;
++                }
++                ggml_backend_tensor_set(t, g.data(), 0, g.size()*sizeof(float));
++            } else if (t->type == GGML_TYPE_I32) {
++                std::vector<int32_t> p(ggml_nelements(t));
++                std::uniform_int_distribution<int32_t> dist(0, (int32_t) pos_max - 1);
++                for (auto & x : p) {
++                    x = dist(rng);
++                }
++                ggml_backend_tensor_set(t, p.data(), 0, p.size()*sizeof(int32_t));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++
++    double max_nmse_err() override {
++        // position form: CUDA evaluates cosf / sinf of arguments up to ~3e4 with the fast intrinsics, as its rope
++        return type_c == GGML_TYPE_I32 ? 1e-5 : 1e-7;
++    }
++
++    test_kq_rope_bias(ggml_type type_c = GGML_TYPE_F16, int64_t hs = 128, int64_t nh = 28, int64_t nh_kv = 4,
++            int64_t nt = 1, int64_t kv = 512, std::array<int64_t, 2> ns = {1, 1}, bool q_perm = false, float scale = 1.0f)
++        : type_c(type_c), hs(hs), nh(nh), nh_kv(nh_kv), nt(nt), kv(kv), ns(ns), q_perm(q_perm), scale(scale) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * q;
++        if (q_perm) {
++            q = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, hs, nt, nh, ns[0]);
++            ggml_set_name(q, "q");
++            q = ggml_permute(ctx, q, 0, 2, 1, 3); // [hs, nh, nt, ns]
++        } else {
++            q = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, hs, nh, nt, ns[0]);
++            ggml_set_name(q, "q");
++        }
++
++        ggml_tensor * b = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, hs, nh_kv);
++        ggml_set_name(b, "b");
++
++        if (type_c == GGML_TYPE_I32) { // position form
++            ggml_tensor * pos = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, kv);
++            ggml_set_name(pos, "pos");
++            ggml_tensor * out;
++            if (gated) {
++                ggml_tensor * gate = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, nh_kv, kv);
++                ggml_set_name(gate, "gate");
++                out = ggml_kq_rope_bias_pos_gated(ctx, q, b, pos, gate, 1000000.0f, 1.0f, scale);
++            } else {
++                out = ggml_kq_rope_bias_pos(ctx, q, b, pos, 1000000.0f, 1.0f, scale);
++            }
++            ggml_set_name(out, "out");
++            return out;
++        }
++        ggml_tensor * c = ggml_new_tensor_4d(ctx, type_c, kv, hs, 1, ns[1]);
++        ggml_set_name(c, "c");
++
++        ggml_tensor * out = ggml_kq_rope_bias(ctx, q, b, c, scale);
++        ggml_set_name(out, "out");
++
++        return out;
++    }
++};
++
+ // GGML_OP_CROSS_ENTROPY_LOSS
+ struct test_cross_entropy_loss : public test_case {
+     const ggml_type type;
+@@ -11821,6 +12002,80 @@
+     test_cases.emplace_back(new test_flash_attn_ext(65, 67, 4, {1, 1}, 17, 75, false, false, 0, 1.0f, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+     test_cases.emplace_back(new test_flash_attn_ext(65, 67, 4, {1, 1}, 113, 75, false, false, 0, 1.0f, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+ 
++    // per-head KQ bias (decode only: 1-2 queries, n_kv multiple of 256 for the CUDA vec kernel)
++    for (bool kqb_permuted : {false, true}) {
++        for (int64_t nb : {1, 2}) {
++            for (auto [type_K, type_V] : std::vector<std::pair<ggml_type, ggml_type>>{
++                    {GGML_TYPE_F16, GGML_TYPE_F16}, {GGML_TYPE_F16, GGML_TYPE_Q8_0}, {GGML_TYPE_Q4_0, GGML_TYPE_Q8_0},
++                    {GGML_TYPE_Q8_0, GGML_TYPE_Q8_0},
++                    {GGML_TYPE_Q4_0, GGML_TYPE_Q4_0}}) {
++                test_cases.emplace_back(new test_flash_attn_ext_kq_bias(kqb_permuted, 128, 4, {7, 1}, 512, nb, type_K, type_V));
++            }
++        }
++    }
++
++    // KQ bias of a rotated key bias (KV de-offset decode path)
++    for (ggml_type type_c : {GGML_TYPE_F32, GGML_TYPE_F16}) {
++        for (int64_t hs : {64, 128, 256}) {
++            for (auto [nh, nh_kv] : std::vector<std::pair<int64_t, int64_t>>{{28, 4}, {4, 4}, {8, 1}}) {
++                for (int64_t nt : {1, 2, 3}) {
++                    for (int64_t kv : {256, 1000, 4096}) {
++                        test_cases.emplace_back(new test_kq_rope_bias(type_c, hs, nh, nh_kv, nt, kv));
++                    }
++                }
++            }
++        }
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 28, 4, 2, 512, {1, 1}, true, 1.0f/256));
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 28, 4, 1, 512, {2, 1}, false, 1.0f/256));
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 28, 4, 2, 512, {2, 2}, true, 1.0f/256));
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 6, 2, 1, 260, {1, 1}, false, 1.0f));
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 64, 40, 8, 7, 768, {1, 1}, false, 1.0f));
++        test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 28, 4, 1, 32768, {1, 1}, false, 1.0f/256));
++        // n_kv not a multiple of 4: no vector loads
++        if (type_c == GGML_TYPE_F32) {
++            // position form (OV2): D 64 / 128 / 256, heads 6-40, GQA 1-8, 1-2 tokens, n_kv 260-32768
++            for (int64_t hs : {64, 128, 256}) {
++                for (auto [nh, nh_kv] : std::vector<std::pair<int64_t, int64_t>>{{16, 8}, {28, 4}, {6, 2}, {40, 8}, {8, 1}, {4, 4}}) {
++                    for (int64_t nt : {1, 2}) {
++                        for (int64_t kv : {260, 1001, 4096, 32768}) {
++                            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_I32, hs, nh, nh_kv, nt, kv));
++                        }
++                    }
++                }
++            }
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_I32, 128, 28, 4, 2, 512, {1, 1}, true, 1.0f));
++            // SG2: the fused write gate (both modes)
++            for (int64_t D : {64, 128, 256}) {
++                for (int64_t H : {1, 2, 4, 8}) {
++                    for (int64_t Tn : {1, 2, 7, 512}) {
++                        for (int mode : {0, 1}) {
++                            for (bool perm : {false, true}) {
++                                test_cases.emplace_back(new test_kv_mu_gate(D, H, Tn, mode, perm));
++                            }
++                        }
++                    }
++                }
++            }
++            // SG1: the same ranges with a random gate
++            for (int64_t hs : {64, 128, 256}) {
++                for (auto [nh, nh_kv] : std::vector<std::pair<int64_t, int64_t>>{{16, 8}, {28, 4}, {6, 2}, {40, 8}, {8, 1}, {4, 4}}) {
++                    for (int64_t nt : {1, 2}) {
++                        for (int64_t kv : {260, 1001, 4096, 32768}) {
++                            auto * tc = new test_kq_rope_bias(GGML_TYPE_I32, hs, nh, nh_kv, nt, kv);
++                            tc->gated = true;
++                            test_cases.emplace_back(tc);
++                        }
++                    }
++                }
++            }
++        }
++        for (int64_t kv : {258, 1001, 1002, 1003}) {
++            for (int64_t nt : {1, 2}) {
++                test_cases.emplace_back(new test_kq_rope_bias(type_c, 128, 28, 4, nt, kv, {1, 1}, false, 1.0f/256));
++            }
++        }
++    }
++
+     // mixed quant and Q1_0 test cases
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 4, {1, 1}, 128, 2, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q4_0));
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 4, {1, 1}, 128, 2, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_F16));
+@@ -12433,6 +12688,33 @@
+         test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {12, 1}, kv, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 1, 2, 3}, true, false, 0));
+     }
+ 
++    // KV de-offset decode, Qwen2.5-7B shape (28 heads, 4 KV heads, head dim 128): the fused KQ bias op and, for
++    // comparison, the two mul_mat it replaces (u = m q, then kqb = c'^T u with F32 c')
++    for (int64_t kv : {256, 4096, 16384, 32768}) {
++        for (int64_t nt : {1, 2}) {
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_F16, 128, 28, 4, nt, kv, {1, 1}, false, 1.0f/256));
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_F32, 128, 28, 4, nt, kv, {1, 1}, false, 1.0f));
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_I32, 128, 28, 4, nt, kv, {1, 1}, false, 1.0f));
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_I32, 128, 16, 8, nt, kv, {1, 1}, false, 1.0f));
++            test_cases.emplace_back(new test_kq_rope_bias(GGML_TYPE_F32, 128, 16, 8, nt, kv, {1, 1}, false, 1.0f));
++            test_cases.emplace_back(new test_mul_mat(GGML_TYPE_F32, GGML_TYPE_F32, kv, 28*nt, 128, {1, 1}, {1, 1}));
++            if (kv == 256) {
++                test_cases.emplace_back(new test_mul_mat(GGML_TYPE_F32, GGML_TYPE_F32, 128, nt, 128, {4, 1}, {7, 1}));
++            }
++        }
++    }
++
++    // decode with the per-head KQ bias (KV key-bias correction), Qwen2.5-7B shape: 4 KV heads x GQA 7, head dim 128
++    for (int64_t kv : {4096, 16384, 32768}) {
++        for (auto [type_K, type_V] : std::vector<std::pair<ggml_type, ggml_type>>{
++                {GGML_TYPE_Q4_0, GGML_TYPE_Q8_0}, {GGML_TYPE_Q8_0, GGML_TYPE_Q8_0}, {GGML_TYPE_F16, GGML_TYPE_Q8_0}}) {
++            for (int64_t nb : {1, 2}) {
++                test_cases.emplace_back(new test_flash_attn_ext(128, 128, 4, {7, 1}, kv, nb, true, false, 0, 0, GGML_PREC_F32, type_K, type_V));
++                test_cases.emplace_back(new test_flash_attn_ext_kq_bias(false, 128, 4, {7, 1}, kv, nb, type_K, type_V));
++            }
++        }
++    }
++
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {8, 1}, 7680, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {8, 1}, 7680, 4, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {8, 1}, 7680,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
+diff --git a/tools/perplexity/perplexity.cpp b/tools/perplexity/perplexity.cpp
+--- a/tools/perplexity/perplexity.cpp
++++ b/tools/perplexity/perplexity.cpp
+@@ -1865,7 +1865,7 @@
+             LOG("    %10.5lf ± %10.5lf", log_ppl_ratio_val, log_ppl_ratio_unc);
+ 
+             auto kl_div = mean_and_uncertainty(kld.sum_kld, kld.sum_kld2, kld.count);
+-            LOG("    %10.5lf ± %10.5lf", kl_div.first, kl_div.second);
++            LOG("    %12.8lf ± %12.8lf", kl_div.first, kl_div.second);
+ 
+             auto p_diff_mse   = mean_and_uncertainty(kld.sum_p_diff2, kld.sum_p_diff4, kld.count);
+             const double p_diff_rms_val = sqrt(p_diff_mse.first);
