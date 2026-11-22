@@ -1,0 +1,136 @@
+{
+ "unusable_labels": {
+  "qwen3_1p7b_base|q4_0": {
+   "f16_avg": 1.1890368967332978,
+   "f16_loop_rate": 0.65
+  },
+  "qwen3_1p7b_base|q4_0norot": {
+   "f16_avg": 1.1890368967332978,
+   "f16_loop_rate": 0.65
+  },
+  "qwen3_1p7b_base|q4_1": {
+   "f16_avg": 1.1890368967332978,
+   "f16_loop_rate": 0.65
+  },
+  "qwen3_4b_base|q4_0": {
+   "f16_avg": 4.300574108953926,
+   "f16_loop_rate": 0.01125
+  },
+  "qwen3_4b_base|q4_0norot": {
+   "f16_avg": 4.300574108953926,
+   "f16_loop_rate": 0.01125
+  },
+  "qwen3_4b_base|q4_1": {
+   "f16_avg": 4.300574108953926,
+   "f16_loop_rate": 0.01125
+  }
+ },
+ "undecidable_or_missing": [
+  "falcon3_3b|q4_0",
+  "falcon3_3b|q4_0norot",
+  "granite33_2b|q4_0norot",
+  "granite33_2b|q4_1"
+ ],
+ "probe_void": [],
+ "check": {
+  "n": 20,
+  "damaged": 9,
+  "misclear": 0,
+  "misclear_collapse": 0,
+  "false_alarm": 1,
+  "bal_acc": 0.9545454545454546,
+  "cost": 1
+ },
+ "top2": {
+  "n": 20,
+  "damaged": 9,
+  "misclear": 0,
+  "misclear_collapse": 0,
+  "false_alarm": 1,
+  "bal_acc": 0.9545454545454546,
+  "cost": 1
+ },
+ "klm": {
+  "n": 20,
+  "damaged": 9,
+  "misclear": 2,
+  "misclear_collapse": 2,
+  "false_alarm": 1,
+  "bal_acc": 0.8434343434343434,
+  "cost": 11
+ },
+ "family": {
+  "n": 20,
+  "damaged": 9,
+  "misclear": 0,
+  "misclear_collapse": 0,
+  "false_alarm": 0,
+  "bal_acc": 1.0,
+  "cost": 0
+ },
+ "common_cells": [
+  "coder_3b|q4_0",
+  "coder_3b|q4_0norot",
+  "coder_3b|q4_1",
+  "falcon3_3b|q4_1",
+  "granite33_2b|q4_0",
+  "olmo2_1b|q4_0",
+  "olmo2_1b|q4_0norot",
+  "olmo2_1b|q4_1",
+  "qwen2_0p5b|q4_0",
+  "qwen2_0p5b|q4_0norot",
+  "qwen2_0p5b|q4_1",
+  "qwen2_1p5b|q4_0",
+  "qwen2_1p5b|q4_0norot",
+  "qwen2_1p5b|q4_1",
+  "smollm2_360m|q4_0",
+  "smollm2_360m|q4_0norot",
+  "smollm2_360m|q4_1",
+  "stablelm2_zephyr|q4_0",
+  "stablelm2_zephyr|q4_0norot",
+  "stablelm2_zephyr|q4_1"
+ ],
+ "common": {
+  "check": {
+   "n": 20,
+   "damaged": 9,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 1,
+   "bal_acc": 0.9545454545454546,
+   "cost": 1
+  },
+  "top2": {
+   "n": 20,
+   "damaged": 9,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 1,
+   "bal_acc": 0.9545454545454546,
+   "cost": 1
+  },
+  "klm": {
+   "n": 20,
+   "damaged": 9,
+   "misclear": 2,
+   "misclear_collapse": 2,
+   "false_alarm": 1,
+   "bal_acc": 0.8434343434343434,
+   "cost": 11
+  },
+  "family": {
+   "n": 20,
+   "damaged": 9,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 0,
+   "bal_acc": 1.0,
+   "cost": 0
+  }
+ },
+ "verdict": {
+  "PP1": "P_top2 allows 0 of 9 collapse cells -> PASS [common 20 cells: 9 collapse, 9 damaged, 11 lossless, 9 Qwen2-family; left out: 4 undecidable / missing, 6 unusable labels, 0 probe-void]",
+  "PP2": "P_top2 BA 0.955 (misclear 0, false alarm 1) vs P_check 0.955 (misclear 0, false alarm 1); P_family baseline 1.000 -> PASS [common 20 cells: 9 collapse, 9 damaged, 11 lossless, 9 Qwen2-family; left out: 4 undecidable / missing, 6 unusable labels, 0 probe-void]",
+  "PP3": "P_klm BA 0.843 (misclear 2, false alarm 1) vs P_check 0.955 (misclear 0, false alarm 1); P_family baseline 1.000 -> FAIL [common 20 cells: 9 collapse, 9 damaged, 11 lossless, 9 Qwen2-family; left out: 4 undecidable / missing, 6 unusable labels, 0 probe-void]"
+ }
+}

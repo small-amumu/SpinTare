@@ -1,0 +1,55 @@
+{
+ "model": "<models>/Qwen2.5-7B-Instruct",
+ "out": "<work>/sa/Qwen2.5-7B-Instruct-SA",
+ "alpha": 0.5,
+ "T": 2048,
+ "calib_md5": "0422dd08fdcf790ca058c396f64323ef",
+ "gate_text_md5": "4c8f1ecf12d286f0e9e537bee6ef4b96",
+ "script_md5": "2fad4d612321110e061d3fc40db1ed79",
+ "qwen3_shared_lambda": false,
+ "lambda_file": "Qwen2.5-7B-Instruct-SA.lambda.pt",
+ "lambda_md5": "9efa26bed4cf55ae019f708b3b410314",
+ "lambda_min": 0.9478594660758972,
+ "lambda_max": 20.4939022064209,
+ "lambda_shape": [
+  28,
+  4,
+  128
+ ],
+ "write": {
+  "tensors_rewritten": 112,
+  "verified_folded": 112,
+  "verified_identical": 227
+ },
+ "gate": {
+  "i_math_fp32": {
+   "kl_mean": -1.5492662708282978e-10,
+   "top1_agree": 0.999755859375,
+   "max_abs_logit_diff": 0.00047338008880615234,
+   "tokens": 4096
+  },
+  "i_pass": true,
+  "bf16_floor_fp32_vs_bf16": {
+   "kl_mean": 0.0012527336948551238,
+   "top1_agree": 0.982177734375,
+   "max_abs_logit_diff": 6.722292900085449,
+   "tokens": 4096
+  },
+  "ii_files_bf16": {
+   "kl_mean": 0.0010426461667520925,
+   "top1_agree": 0.988525390625,
+   "max_abs_logit_diff": 4.90625,
+   "tokens": 4096
+  },
+  "ii_limit": 0.0037582010845653713,
+  "ii_pass": true,
+  "pass": true
+ },
+ "out_files_md5": {
+  "model-00001-of-00004.safetensors": "c09e22ebcb2f0128b26ef158e9b3e681",
+  "model-00002-of-00004.safetensors": "bd2def70dda1c3b3e88c60de09023b5b",
+  "model-00003-of-00004.safetensors": "212522ec93e8b0fd314ac432fe6b853c",
+  "model-00004-of-00004.safetensors": "f855f1f4320682dd6b4629413c7d2222"
+ },
+ "lambda_tensor_md5": "b8b84031ea168af1a185848770bab76f"
+}

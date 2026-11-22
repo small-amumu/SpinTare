@@ -1,0 +1,26 @@
+{
+ "label": "nvfp4pm_n200",
+ "summary": {
+  "hotpotqa": {
+   "score": 49.13275132471461,
+   "n": 200,
+   "loops": 1
+  },
+  "2wikimqa": {
+   "score": 46.75478950873687,
+   "n": 200,
+   "loops": 0
+  },
+  "musique": {
+   "score": 24.44448618218461,
+   "n": 200,
+   "loops": 2
+  },
+  "passage_retrieval_en": {
+   "score": 71.0,
+   "n": 200,
+   "loops": 0
+  },
+  "avg": 47.83300675390902
+ }
+}

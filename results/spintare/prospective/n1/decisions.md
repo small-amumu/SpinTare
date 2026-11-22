@@ -1,0 +1,29 @@
+| model | cell | D | P_check | b_top2 | P_top2n | P_top2 (pooled) |
+|---|---|---|---|---|---|---|
+| glm4_9b | q4_0 | 0.0731 | allow | 1.185 | refuse | refuse |
+| glm4_9b | q4_0norot | 0.1363 | fallback | 1.738 | refuse | refuse |
+| glm4_9b | q4_1 | 0.0593 | allow | 1.198 | refuse | refuse |
+| qwen3_4b_2507 | q4_0 | 0.0183 | allow | 2.438 | allow | allow |
+| qwen3_4b_2507 | q4_0norot | 0.0536 | allow | 2.056 | allow | refuse |
+| qwen3_4b_2507 | q4_1 | 0.0179 | allow | 2.421 | allow | allow |
+| r1q3_8b | q4_0 | 0.1332 | fallback | 2.335 | allow | refuse |
+| r1q3_8b | q4_0norot | 0.2015 | fallback | 2.175 | allow | refuse |
+| r1q3_8b | q4_1 | 0.1315 | fallback | 2.315 | allow | refuse |
+| granite31_8b | q4_0 | 0.0128 | allow | 2.546 | allow | allow |
+| granite31_8b | q4_0norot | 0.0601 | allow | 2.251 | allow | refuse |
+| granite31_8b | q4_1 | 0.0115 | allow | 2.620 | allow | allow |
+| ernie45_0p3b | q4_0 | 0.0418 | allow | 2.795 | allow | allow |
+| ernie45_0p3b | q4_0norot | 0.1950 | fallback | 2.495 | allow | allow |
+| ernie45_0p3b | q4_1 | 0.0333 | allow | 2.862 | allow | allow |
+| smollm3_3b | q4_0 | 0.0141 | allow | 2.989 | allow | allow |
+| smollm3_3b | q4_0norot | 0.0397 | allow | 2.633 | allow | allow |
+| smollm3_3b | q4_1 | 0.0129 | allow | 3.067 | allow | allow |
+| hermes3_3b | q4_0 | 0.0286 | allow | 3.035 | allow | allow |
+| hermes3_3b | q4_0norot | 0.0879 | allow | 2.696 | allow | allow |
+| hermes3_3b | q4_1 | 0.0232 | allow | 3.111 | allow | allow |
+| tulu3_8b | q4_0 | 0.0806 | allow | 3.027 | allow | allow |
+| tulu3_8b | q4_0norot | 0.1912 | fallback | 2.729 | allow | allow |
+| tulu3_8b | q4_1 | 0.0679 | allow | 3.104 | allow | allow |
+| phi4mini | q4_0 | 0.0096 | allow | 3.146 | allow | allow |
+| phi4mini | q4_0norot | 0.0177 | allow | 2.738 | allow | allow |
+| phi4mini | q4_1 | 0.0081 | allow | 3.224 | allow | allow |

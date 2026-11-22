@@ -1,0 +1,52 @@
+{
+ "model": "<models>/Qwen3-0.6B",
+ "out": "<work>/sa/Qwen3-0.6B-SA",
+ "alpha": 0.5,
+ "T": 2048,
+ "calib_md5": "0422dd08fdcf790ca058c396f64323ef",
+ "gate_text_md5": "4c8f1ecf12d286f0e9e537bee6ef4b96",
+ "script_md5": "2fad4d612321110e061d3fc40db1ed79",
+ "qwen3_shared_lambda": true,
+ "lambda_file": "Qwen3-0.6B-SA.lambda.pt",
+ "lambda_md5": "6f99cec4ed6872ef9d3b8da2462bc611",
+ "lambda_min": 0.2519455552101135,
+ "lambda_max": 21.908903121948242,
+ "lambda_shape": [
+  28,
+  8,
+  128
+ ],
+ "write": {
+  "tensors_rewritten": 56,
+  "verified_folded": 56,
+  "verified_identical": 255
+ },
+ "gate": {
+  "i_math_fp32": {
+   "kl_mean": -2.451154557103763e-09,
+   "top1_agree": 1.0,
+   "max_abs_logit_diff": 0.00031948089599609375,
+   "tokens": 4096
+  },
+  "i_pass": true,
+  "bf16_floor_fp32_vs_bf16": {
+   "kl_mean": 0.0007079680799506605,
+   "top1_agree": 0.980712890625,
+   "max_abs_logit_diff": 1.0263032913208008,
+   "tokens": 4096
+  },
+  "ii_files_bf16": {
+   "kl_mean": 0.0012948729854542762,
+   "top1_agree": 0.985595703125,
+   "max_abs_logit_diff": 1.375,
+   "tokens": 4096
+  },
+  "ii_limit": 0.0021239042398519814,
+  "ii_pass": true,
+  "pass": true
+ },
+ "out_files_md5": {
+  "model.safetensors": "128ac45b46d79175d7a6eea0805adacd"
+ },
+ "lambda_tensor_md5": "79cc9dd1dfcb593f76defb71ae7a7af9"
+}

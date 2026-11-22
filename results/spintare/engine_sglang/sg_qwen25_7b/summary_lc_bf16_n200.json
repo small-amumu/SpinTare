@@ -1,0 +1,26 @@
+{
+ "label": "bf16_n200",
+ "summary": {
+  "hotpotqa": {
+   "score": 49.72673372011141,
+   "n": 200,
+   "loops": 1
+  },
+  "2wikimqa": {
+   "score": 46.05497835497836,
+   "n": 200,
+   "loops": 0
+  },
+  "musique": {
+   "score": 27.321608606722698,
+   "n": 200,
+   "loops": 2
+  },
+  "passage_retrieval_en": {
+   "score": 71.5,
+   "n": 200,
+   "loops": 0
+  },
+  "avg": 48.65083017045312
+ }
+}

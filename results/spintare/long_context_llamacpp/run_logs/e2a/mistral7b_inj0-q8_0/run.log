@@ -1,0 +1,14 @@
+2026-11-06T08:59:41Z start mistral7b_inj0-q8_0 gpu=0 ppl=e91d9500 gguf=e8f8c704
+2026-11-06T09:00:15Z mistral7b_inj0-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
+2026-11-06T09:00:30Z mistral7b_inj0-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.015443 ±   0.000478
+2026-11-06T09:00:44Z mistral7b_inj0-q8_0 L=2048 q4_0norot rc=0 chunks_done=16 want=16 Mean    KLD:   0.027099 ±   0.000631
+2026-11-06T09:00:59Z mistral7b_inj0-q8_0 L=2048 q8_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.000109 ±   0.000003
+2026-11-06T09:01:17Z mistral7b_inj0-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
+2026-11-06T09:01:34Z mistral7b_inj0-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.017091 ±   0.000486
+2026-11-06T09:01:51Z mistral7b_inj0-q8_0 L=8192 q4_0norot rc=0 chunks_done=4 want=4 Mean    KLD:   0.028632 ±   0.000581
+2026-11-06T09:02:08Z mistral7b_inj0-q8_0 L=8192 q8_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.000161 ±   0.000004
+2026-11-06T09:02:33Z mistral7b_inj0-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
+2026-11-06T09:02:56Z mistral7b_inj0-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.016116 ±   0.000503
+2026-11-06T09:03:20Z mistral7b_inj0-q8_0 L=32768 q4_0norot rc=0 chunks_done=1 want=1 Mean    KLD:   0.031456 ±   0.000732
+2026-11-06T09:03:44Z mistral7b_inj0-q8_0 L=32768 q8_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.000111 ±   0.000004
+2026-11-06T09:03:44Z done mistral7b_inj0-q8_0

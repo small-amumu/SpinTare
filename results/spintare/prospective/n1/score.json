@@ -1,0 +1,77 @@
+{
+ "unusable_labels": {},
+ "common_cells": [
+  "glm4_9b|q4_1",
+  "qwen3_4b_2507|q4_1",
+  "r1q3_8b|q4_0",
+  "r1q3_8b|q4_0norot",
+  "granite31_8b|q4_0",
+  "granite31_8b|q4_1",
+  "ernie45_0p3b|q4_0",
+  "ernie45_0p3b|q4_1",
+  "smollm3_3b|q4_0",
+  "smollm3_3b|q4_1",
+  "hermes3_3b|q4_0norot",
+  "hermes3_3b|q4_1",
+  "tulu3_8b|q4_0",
+  "tulu3_8b|q4_0norot",
+  "tulu3_8b|q4_1",
+  "phi4mini|q4_0",
+  "phi4mini|q4_0norot",
+  "phi4mini|q4_1"
+ ],
+ "undecidable_or_missing": [
+  "glm4_9b|q4_0",
+  "glm4_9b|q4_0norot",
+  "qwen3_4b_2507|q4_0",
+  "qwen3_4b_2507|q4_0norot",
+  "r1q3_8b|q4_1",
+  "granite31_8b|q4_0norot",
+  "ernie45_0p3b|q4_0norot",
+  "smollm3_3b|q4_0norot",
+  "hermes3_3b|q4_0"
+ ],
+ "common": {
+  "top2n": {
+   "n": 18,
+   "damaged": 2,
+   "misclear": 2,
+   "misclear_collapse": 1,
+   "false_alarm": 1,
+   "bal_acc": 0.46875,
+   "cost": 11
+  },
+  "check": {
+   "n": 18,
+   "damaged": 2,
+   "misclear": 1,
+   "misclear_collapse": 0,
+   "false_alarm": 2,
+   "bal_acc": 0.6875,
+   "cost": 7
+  },
+  "family": {
+   "n": 18,
+   "damaged": 2,
+   "misclear": 2,
+   "misclear_collapse": 1,
+   "false_alarm": 0,
+   "bal_acc": 0.5,
+   "cost": 10
+  },
+  "top2": {
+   "n": 18,
+   "damaged": 2,
+   "misclear": 1,
+   "misclear_collapse": 0,
+   "false_alarm": 2,
+   "bal_acc": 0.6875,
+   "cost": 7
+  }
+ },
+ "verdict": {
+  "NP1": "FAIL: (a) collapse clause FAIL (collapse allowed 1 of 1); (b) BA clause FAIL (P_top2n BA 0.469: misclear 2, false alarm 1; P_check BA 0.688: misclear 1, false alarm 2) [common 18 cells: 1 collapse, 2 damaged, 16 lossless; left out 9 undecidable / missing, 0 unusable]",
+  "NP2": "FAIL: P_top2n BA 0.469 vs allow-all 0.500; recall 0/2, specificity 15/16 [common 18 cells: 1 collapse, 2 damaged, 16 lossless; left out 9 undecidable / missing, 0 unusable]",
+  "NEAR": "0 common cells within 0.05 bit of the threshold []; P_top2n BA without them 0.469 (misclear 2, false alarm 1, n 18)"
+ }
+}

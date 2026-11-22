@@ -1,0 +1,98 @@
+{
+ "unusable_labels": {
+  "qwen25math_1p5b|q4_0": {
+   "f16_avg": 3.2451276680422456,
+   "f16_loop_rate": 0.065
+  },
+  "qwen25math_1p5b|q4_0norot": {
+   "f16_avg": 3.2451276680422456,
+   "f16_loop_rate": 0.065
+  },
+  "qwen25math_1p5b|q4_1": {
+   "f16_avg": 3.2451276680422456,
+   "f16_loop_rate": 0.065
+  },
+  "r1q_14b|q4_0": {
+   "f16_avg": 2.9842508113321995,
+   "f16_loop_rate": 0.0
+  },
+  "r1q_14b|q4_0norot": {
+   "f16_avg": 2.9842508113321995,
+   "f16_loop_rate": 0.0
+  },
+  "r1q_14b|q4_1": {
+   "f16_avg": 2.9842508113321995,
+   "f16_loop_rate": 0.0
+  },
+  "r1l_8b|q4_0": {
+   "f16_avg": 3.006684900695873,
+   "f16_loop_rate": 0.0
+  },
+  "r1l_8b|q4_0norot": {
+   "f16_avg": 3.006684900695873,
+   "f16_loop_rate": 0.0
+  },
+  "r1l_8b|q4_1": {
+   "f16_avg": 3.006684900695873,
+   "f16_loop_rate": 0.0
+  }
+ },
+ "common_cells": [
+  "qwen25coder_1p5b|q4_0",
+  "qwen25coder_1p5b|q4_0norot",
+  "qwen25coder_1p5b|q4_1",
+  "gemma2_9b|q4_0",
+  "gemma2_9b|q4_0norot",
+  "gemma2_9b|q4_1",
+  "falcon3_1b|q4_0",
+  "falcon3_1b|q4_0norot",
+  "falcon3_1b|q4_1",
+  "exaone4_1b|q4_0",
+  "exaone4_1b|q4_0norot",
+  "exaone4_1b|q4_1"
+ ],
+ "undecidable_or_missing": [],
+ "common": {
+  "top2n": {
+   "n": 12,
+   "damaged": 3,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 0,
+   "bal_acc": 1.0,
+   "cost": 0
+  },
+  "check": {
+   "n": 12,
+   "damaged": 3,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 1,
+   "bal_acc": 0.9444444444444444,
+   "cost": 1
+  },
+  "family": {
+   "n": 12,
+   "damaged": 3,
+   "misclear": 3,
+   "misclear_collapse": 3,
+   "false_alarm": 0,
+   "bal_acc": 0.5,
+   "cost": 15
+  },
+  "top2": {
+   "n": 12,
+   "damaged": 3,
+   "misclear": 0,
+   "misclear_collapse": 0,
+   "false_alarm": 0,
+   "bal_acc": 1.0,
+   "cost": 0
+  }
+ },
+ "verdict": {
+  "NP1": "PASS: (a) collapse clause PASS (collapse allowed 0 of 3); (b) BA clause PASS (P_top2n BA 1.000: misclear 0, false alarm 0; P_check BA 0.944: misclear 0, false alarm 1) [common 12 cells: 3 collapse, 3 damaged, 9 lossless; left out 0 undecidable / missing, 9 unusable]",
+  "NP2": "PASS: P_top2n BA 1.000 vs allow-all 0.500; recall 3/3, specificity 9/9 [common 12 cells: 3 collapse, 3 damaged, 9 lossless; left out 0 undecidable / missing, 9 unusable]",
+  "NEAR": "0 common cells within 0.05 bit of the threshold []; P_top2n BA without them 1.000 (misclear 0, false alarm 0, n 12)"
+ }
+}

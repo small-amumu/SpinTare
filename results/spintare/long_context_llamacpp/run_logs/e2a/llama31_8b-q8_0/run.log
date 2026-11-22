@@ -1,0 +1,26 @@
+2026-11-06T08:54:05Z start llama31_8b-q8_0 gpu=1 ppl=e91d9500 gguf=3cd5f4e7
+2026-11-06T08:54:50Z llama31_8b-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
+2026-11-06T08:55:08Z llama31_8b-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.020770 ±   0.000659
+2026-11-06T08:55:28Z llama31_8b-q8_0 L=2048 q4_0norot rc=0 chunks_done=16 want=16 Mean    KLD:   0.054956 ±   0.001205
+2026-11-06T08:55:48Z llama31_8b-q8_0 L=2048 q8_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.000108 ±   0.000004
+2026-11-06T08:56:13Z llama31_8b-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
+2026-11-06T08:56:37Z llama31_8b-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.021875 ±   0.000646
+2026-11-06T08:57:00Z llama31_8b-q8_0 L=8192 q4_0norot rc=0 chunks_done=4 want=4 Mean    KLD:   0.042512 ±   0.000866
+2026-11-06T08:57:24Z llama31_8b-q8_0 L=8192 q8_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.000108 ±   0.000004
+2026-11-06T08:57:58Z llama31_8b-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
+2026-11-06T08:58:29Z llama31_8b-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.023193 ±   0.001078
+2026-11-06T08:59:01Z llama31_8b-q8_0 L=32768 q4_0norot rc=0 chunks_done=1 want=1 Mean    KLD:   0.038759 ±   0.000754
+2026-11-06T08:59:32Z llama31_8b-q8_0 L=32768 q8_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.000121 ±   0.000006
+2026-11-06T08:59:32Z done llama31_8b-q8_0
+2026-11-06T09:10:39Z start llama31_8b-q8_0 gpu=0,1 ppl=e91d9500 gguf=3cd5f4e7
+2026-11-06T09:11:06Z llama31_8b-q8_0 L=131072 f16 rc=0 chunks_done=0 want=1 
+2026-11-06T09:11:11Z llama31_8b-q8_0 L=131072 q4_0 rc=0 chunks_done=0 want=1 
+2026-11-06T09:11:16Z llama31_8b-q8_0 L=131072 q4_0norot rc=0 chunks_done=0 want=1 
+2026-11-06T09:11:21Z llama31_8b-q8_0 L=131072 q8_0 rc=0 chunks_done=0 want=1 
+2026-11-06T09:11:21Z done llama31_8b-q8_0
+2026-11-06T12:02:08Z start llama31_8b-q8_0 gpu=0,1 ppl=e91d9500 gguf=3cd5f4e7
+2026-11-06T12:04:52Z llama31_8b-q8_0 L=131072 f16 rc=0 chunks_done=0 want=1 
+2026-11-06T12:07:14Z llama31_8b-q8_0 L=131072 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.024181 ±   0.000340
+2026-11-06T12:09:35Z llama31_8b-q8_0 L=131072 q4_0norot rc=0 chunks_done=1 want=1 Mean    KLD:   0.042402 ±   0.000369
+2026-11-06T12:11:56Z llama31_8b-q8_0 L=131072 q8_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.000121 ±   0.000003
+2026-11-06T12:11:56Z done llama31_8b-q8_0

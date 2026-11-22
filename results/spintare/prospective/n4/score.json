@@ -1,0 +1,59 @@
+{
+ "unusable_labels": {},
+ "common_cells": [
+  "llama31_8b_n4r4|q4_0norot",
+  "llama31_8b_n4r8|q4_0",
+  "llama31_8b_n4r8|q4_0norot",
+  "llama31_8b_n4r8|q4_1",
+  "llama31_8b_n4r16|q4_0norot",
+  "llama31_8b_n4r16|q4_1"
+ ],
+ "undecidable_or_missing": [
+  "llama31_8b_n4r4|q4_0",
+  "llama31_8b_n4r4|q4_1",
+  "llama31_8b_n4r16|q4_0"
+ ],
+ "common": {
+  "top2n": {
+   "n": 6,
+   "damaged": 6,
+   "misclear": 5,
+   "misclear_collapse": 1,
+   "false_alarm": 0,
+   "bal_acc": NaN,
+   "cost": 25
+  },
+  "check": {
+   "n": 6,
+   "damaged": 6,
+   "misclear": 3,
+   "misclear_collapse": 0,
+   "false_alarm": 0,
+   "bal_acc": NaN,
+   "cost": 15
+  },
+  "family": {
+   "n": 6,
+   "damaged": 6,
+   "misclear": 6,
+   "misclear_collapse": 2,
+   "false_alarm": 0,
+   "bal_acc": NaN,
+   "cost": 30
+  },
+  "top2": {
+   "n": 6,
+   "damaged": 6,
+   "misclear": 4,
+   "misclear_collapse": 1,
+   "false_alarm": 0,
+   "bal_acc": NaN,
+   "cost": 20
+  }
+ },
+ "verdict": {
+  "NP1": "FAIL: (a) collapse clause FAIL (collapse allowed 1 of 2); (b) BA clause UNTESTED (P_top2n BA nan: misclear 5, false alarm 0; P_check BA nan: misclear 3, false alarm 0) [common 6 cells: 2 collapse, 6 damaged, 0 lossless; left out 3 undecidable / missing, 0 unusable]",
+  "NP2": "UNTESTED (one class missing): P_top2n BA nan vs allow-all nan; recall 1/6, specificity 0/0 [common 6 cells: 2 collapse, 6 damaged, 0 lossless; left out 3 undecidable / missing, 0 unusable]",
+  "NEAR": "0 common cells within 0.05 bit of the threshold []; P_top2n BA without them nan (misclear 5, false alarm 0, n 6)"
+ }
+}
