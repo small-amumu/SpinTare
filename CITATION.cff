@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the SpinTare paper."
+title: "SpinTare: Efficient Detection and Mitigation of Offset-Induced K-Cache Collapse"
+type: software
+authors:
+  - name: "The SpinTare Authors"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-11-22
+keywords:
+  - kv-cache
+  - quantization
+  - llm-inference
+  - llama.cpp
+  - vllm
+preferred-citation:
+  type: article
+  title: "SpinTare: Efficient Detection and Mitigation of Offset-Induced K-Cache Collapse"
+  authors:
+    - name: "The SpinTare Authors"
+  year: 2026
+  notes: "Under review"
