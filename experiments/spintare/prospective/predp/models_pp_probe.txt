@@ -1,0 +1,11 @@
+# PRED-P probe list (run_pp_probe.sh format): tag  HF dir  GGUF  device
+qwen2_0p5b        Qwen2-0.5B-Instruct            pp_qwen2_0p5b-q8_0.gguf         gpu
+qwen2_1p5b        Qwen2-1.5B-Instruct            pp_qwen2_1p5b-q8_0.gguf         gpu
+coder_3b          Qwen2.5-Coder-3B-Instruct      pp_coder_3b-q8_0.gguf           gpu
+qwen3_1p7b_base   Qwen3-1.7B-Base                pp_qwen3_1p7b_base-q8_0.gguf    gpu
+qwen3_4b_base     Qwen3-4B-Base                  pp_qwen3_4b_base-q8_0.gguf      gpu
+stablelm2_zephyr  stablelm-2-zephyr-1_6b         pp_stablelm2_zephyr-q8_0.gguf   gpu
+falcon3_3b        Falcon3-3B-Instruct_bos11      pp_falcon3_3b-q8_0.gguf         gpu
+smollm2_360m      SmolLM2-360M-Instruct          pp_smollm2_360m-q8_0.gguf       gpu
+olmo2_1b          OLMo-2-0425-1B-Instruct        pp_olmo2_1b-q8_0.gguf           gpu
+granite33_2b      granite-3.3-2b-instruct        pp_granite33_2b-q8_0.gguf       gpu

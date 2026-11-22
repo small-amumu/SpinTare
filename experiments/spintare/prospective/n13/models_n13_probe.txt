@@ -1,0 +1,10 @@
+# N13 probe list (run_n13_probe.sh format): tag  HF dir  GGUF  device; "-=<tag>" = layout copied from N1's results
+r1l_8b           DeepSeek-R1-Distill-Llama-8B_tokfix     -=r1l_8b gpu
+gemma2_9b        gemma-2-9b-it                    -=gemma2_9b gpu
+falcon3_1b       Falcon3-1B-Instruct_bos11        -=falcon3_1b gpu
+exaone4_1b       EXAONE-4.0-1.2B                  -=exaone4_1b gpu
+qwen25coder_1p5b Qwen2.5-Coder-1.5B-Instruct      n13_qwen25coder_1p5b-q8_0.gguf gpu
+qwen25math_1p5b  Qwen2.5-Math-1.5B-Instruct       n13_qwen25math_1p5b-q8_0.gguf gpu
+r1q_14b          DeepSeek-R1-Distill-Qwen-14B     n13_r1q_14b-q8_0.gguf gpu
+olmo2_13b        OLMo-2-1124-13B-Instruct         n13_olmo2_13b-q8_0.gguf gpu
+phi4_14b         phi-4                            n13_phi4_14b-q8_0.gguf gpu

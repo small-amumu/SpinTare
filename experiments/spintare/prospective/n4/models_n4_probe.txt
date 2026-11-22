@@ -1,0 +1,4 @@
+# N4 probe list: tag  HF dir  GGUF  device
+llama31_8b_n4r4   n4_llama31_8b_r4   n4_llama31_8b_n4r4-q8_0.gguf   gpu
+llama31_8b_n4r8   n4_llama31_8b_r8   n4_llama31_8b_n4r8-q8_0.gguf   gpu
+llama31_8b_n4r16  n4_llama31_8b_r16  n4_llama31_8b_n4r16-q8_0.gguf  gpu

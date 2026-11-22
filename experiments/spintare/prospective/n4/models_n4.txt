@@ -1,0 +1,4 @@
+# N4 models: tag | HF dir under ~/models (written by A0)
+llama31_8b_n4r4 | n4_llama31_8b_r4
+llama31_8b_n4r8 | n4_llama31_8b_r8
+llama31_8b_n4r16 | n4_llama31_8b_r16

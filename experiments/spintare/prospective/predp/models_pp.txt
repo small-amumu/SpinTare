@@ -1,0 +1,11 @@
+# PRED-P new models: tag | HF dir under ~/models (none of them has any engine, probe or task result before PRED-P)
+qwen2_0p5b | Qwen2-0.5B-Instruct
+qwen2_1p5b | Qwen2-1.5B-Instruct
+coder_3b | Qwen2.5-Coder-3B-Instruct
+qwen3_1p7b_base | Qwen3-1.7B-Base
+qwen3_4b_base | Qwen3-4B-Base
+stablelm2_zephyr | stablelm-2-zephyr-1_6b
+falcon3_3b | Falcon3-3B-Instruct
+smollm2_360m | SmolLM2-360M-Instruct
+olmo2_1b | OLMo-2-0425-1B-Instruct
+granite33_2b | granite-3.3-2b-instruct

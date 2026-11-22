@@ -1,0 +1,14 @@
+# N1 probe list (run_n1_probe.sh format): tag  HF dir  GGUF  device
+qwen3_4b_2507    Qwen3-4B-Instruct-2507           n1_qwen3_4b_2507-q8_0.gguf gpu
+hermes3_3b       Hermes-3-Llama-3.2-3B            n1_hermes3_3b-q8_0.gguf gpu
+r1l_8b           DeepSeek-R1-Distill-Llama-8B_tokfix     n1_r1l_8b-q8_0.gguf gpu
+tulu3_8b         Llama-3.1-Tulu-3-8B              n1_tulu3_8b-q8_0.gguf gpu
+gemma2_9b        gemma-2-9b-it                    n1_gemma2_9b-q8_0.gguf gpu
+falcon3_1b       Falcon3-1B-Instruct_bos11              n1_falcon3_1b-q8_0.gguf gpu
+granite31_8b     granite-3.1-8b-instruct          n1_granite31_8b-q8_0.gguf gpu
+phi4mini         Phi-4-mini-instruct_native              @hf:0 gpu
+smollm3_3b       SmolLM3-3B                       n1_smollm3_3b-q8_0.gguf gpu
+exaone4_1b       EXAONE-4.0-1.2B                  n1_exaone4_1b-q8_0.gguf gpu
+ernie45_0p3b     ERNIE-4.5-0.3B-PT                n1_ernie45_0p3b-q8_0.gguf gpu
+glm4_9b          GLM-4-9B-0414                    n1_glm4_9b-q8_0.gguf gpu
+r1q3_8b          DeepSeek-R1-0528-Qwen3-8B_tokfix        n1_r1q3_8b-q8_0.gguf gpu
