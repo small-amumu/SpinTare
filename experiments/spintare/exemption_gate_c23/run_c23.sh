@@ -1,7 +1,7 @@
 #!/bin/bash
 # Exemption gate in simulation (C23): whole-model next-token KL with centred Q4_0 keys in every
 # layer; ten models x eight 4096-token windows, float32 weights, exact attention, one GPU (RTX PRO
-# 5000 in the registered run). Feeds tab:row_gate and fig_sink_gate (a). The quantizer is checked
+# 5000 in the registered run). Feeds tab:row_gate. The quantizer is checked
 # bit for bit against the ggml library of a llama.cpp build (KVREL_GGML_LIB, default
 # $KVREL_LLAMA_CPP/build/bin/libggml-base.so). Aggregate: python c23_kl.py agg $KVREL_WORK/c23/res
 # A model starts only while the card is free (< 2000 MiB in use); otherwise the queue stops, so a

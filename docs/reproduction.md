@@ -28,7 +28,7 @@ now use the paper's current name of the gate).
 | Fig. 1 `fig:teaser` | output KL along 32K, five centring models | `experiments/spintare/long_context_lc1/run_lc1.sh` (`lc1_long.py`) | `make_fig_length_kl_col.py` <- `long_context_lc1/res_lc1_agg.json` | RTX 5090 D |
 | Fig. 2 `fig:mech` | why centring is not neutral | drawn (`docs/figures/fig_mech_wide.png`) | - | - |
 | `tab:prior` | prior work | literature | - | - |
-| `tab:engine_collapse` | LongBench collapse across engines | `tasks/lc_lb.py` (llama.cpp), `tasks/lc_lb_vllm.py` (vLLM), `engine_sglang/run_nvsg.sh`; intervals `calib_and_diag/paired_ci.py` | SGLang rows: `engine_sglang/` results | see `engine_sglang/README.md` |
+| `tab:engine_collapse` | LongBench collapse across engines | `tasks/lc_lb.py` (llama.cpp), `tasks/lc_lb_vllm.py` (vLLM); intervals `calib_and_diag/paired_ci.py` | - | - |
 | `fig:layers` | effective bits per layer, 28 models | `detection_gate/kvprobe_unified.py` | `make_figs_col.py` / `make_figs_ch3.py` <- `figure_inputs/layers.csv` (`export_layers.py` <- `detection_gate/results/*/probe.json`) | - |
 | `fig:keys_scatter` | ordinary rows vs the sink row | `analysis/spintare/figures/dump_keys.py` | `make_fig_row_bars_col.py` <- `figure_inputs/keys3d/*.npz` | - |
 | `alg:spintare` | check and serving | `detection_gate/`, `patches/llama.cpp/`, `integrations/vllm/` | - | - |
@@ -58,7 +58,7 @@ now use the paper's current name of the gate).
 | `tab:gate` (bottom) | LongBench with / without the gate | `tasks/run_llamacpp_cell.sh longbench spintare\|nogate` | - | RTX 5090 D |
 | `tab:length_engine` | KL by context length in llama.cpp | `long_context_llamacpp/run_all.sh` | `make_ch5_figs.py` <- `long_context_llamacpp/e2_final.json` (`e2_analyze.py` <- `run_logs/`) | see its README |
 | `tab:rho` | residual energy rho: prediction vs measurement | LC1 | `make_ch5_bars.py` <- `res_lc1_agg.json` | RTX 5090 D |
-| `tab:row_gate` | exemption gate vs no gate / first row only | `exemption_gate_c23/run_c23.sh` | `make_ch5_bars.py` <- `exemption_gate_c23/res_c23_agg.json` | RTX PRO 5000 |
+| `tab:row_gate` | exemption gate vs no gate / first row only | `exemption_gate_c23/run_c23.sh` | `make_ch5_figs.py` <- `exemption_gate_c23/res_c23_agg.json` | RTX PRO 5000 |
 | `tab:gate_ruler` | RULER 32K with / without the gate | `tasks/run_llamacpp_cell.sh ruler spintare\|nogate` | - | RTX 5090 D |
 | `tab:failure_causes` | where long reasoning fails | reasoning cells | `make_ch5_figs.py` <- `reasoning_r1/` | RTX PRO 5000 |
 | `fig:vllm` | vLLM output KL, kernel time, throughput | `integrations/vllm` (`kld`, `pf_bench`) | `make_figs_eval_bars.py` (numbers typed in from the registered runs) | - |
@@ -67,7 +67,7 @@ now use the paper's current name of the gate).
 | `fig:app_decode` | decode slowdown of the add-back and the gate | `decode_overhead/ov2_time.sh`, `sg2_time.sh` | `make_figs.py` <- `decode_overhead/*.json` | RTX 5090 D |
 | `tab:ablation` | further ablations | LC1, C23 | `res_lc1_agg.json`, `res_c23_agg.json` | - |
 | `fig:overview` | workflow | drawn (`docs/figures/fig_overview.png`) | - | - |
-| `fig:sink_gate` | exemption gate in simulation (a) and engine (b) | C23; `decode_overhead/sg2_acc.sh` | `make_figs.py` <- `res_c23_agg.json`, `decode_overhead/res_sg1_acc_agg.json` | (a) RTX PRO 5000, (b) RTX 5090 D |
+| `fig:sink_gate` | exemption gate in simulation (a) and engine (b) | LC1; `decode_overhead/sg2_acc.sh` | `make_figs.py` <- `res_lc1_agg.json`, `decode_overhead/res_sg1_acc_agg.json` | RTX 5090 D |
 
 Paths in the tables are relative to `experiments/spintare/`, `results/spintare/` and
 `analysis/spintare/figures/`. "-" in the GPU column: CPU only, or several cards of the census.

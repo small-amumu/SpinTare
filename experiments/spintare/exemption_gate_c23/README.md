@@ -18,5 +18,5 @@ gated rows raw (the exemption gate), with only row 0 raw, with the gated rows in
 | `run_c23.sh` | the ten models on one GPU |
 
 Frozen aggregate: `results/spintare/exemption_gate_c23/res_c23_agg.json`, read by
-`analysis/spintare/figures/make_ch5_figs.py` (`tab:row_gate`) and `make_figs.py` (panel (a) of
-`fig_sink_gate`). Texts: `data/{long,qasper,musique,mfqa,diag_long}_text.txt` via `KVREL_DATA`.
+`analysis/spintare/figures/make_ch5_figs.py` (`tab:row_gate`). Panel (a) of `fig_sink_gate` comes
+from LC1, not from this run. Texts: `data/{long,qasper,musique,mfqa,diag_long}_text.txt` via `KVREL_DATA`.
