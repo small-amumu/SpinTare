@@ -1,16 +1,27 @@
-2026-11-06T12:42:28Z start llama31_8b-q8_0 gpu=1 ppl=e91d9500 gguf=3cd5f4e7 pm=9ceee064 mu=
-2026-11-06T12:43:09Z llama31_8b-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
-2026-11-06T12:43:28Z llama31_8b-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.020770 ±   0.000659
-2026-11-06T12:43:47Z llama31_8b-q8_0 L=2048 pm rc=0 chunks_done=16 want=16 Mean    KLD:   0.031281 ±   0.000732
-2026-11-06T12:44:12Z llama31_8b-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
-2026-11-06T12:44:37Z llama31_8b-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.021875 ±   0.000646
-2026-11-06T12:45:01Z llama31_8b-q8_0 L=8192 pm rc=0 chunks_done=4 want=4 Mean    KLD:   0.035479 ±   0.000977
-2026-11-06T12:45:33Z llama31_8b-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
-2026-11-06T12:46:07Z llama31_8b-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.023193 ±   0.001078
-2026-11-06T12:46:39Z llama31_8b-q8_0 L=32768 pm rc=0 chunks_done=1 want=1 Mean    KLD:   0.037624 ±   0.001440
-2026-11-06T12:46:39Z done llama31_8b-q8_0 txt=pg19_text.txt nfail=0
-2026-11-06T12:51:33Z start llama31_8b-q8_0 gpu=0,1 ppl=e91d9500 gguf=3cd5f4e7 pm=9ceee064 mu=
-2026-11-06T12:54:13Z llama31_8b-q8_0 L=131072 f16 rc=0 chunks_done=0 want=1 
-2026-11-06T12:56:34Z llama31_8b-q8_0 L=131072 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.024181 ±   0.000340
-2026-11-06T12:58:56Z llama31_8b-q8_0 L=131072 pm rc=0 chunks_done=1 want=1 Mean    KLD:   0.037921 ±   0.000443
-2026-11-06T12:58:56Z done llama31_8b-q8_0 txt=pg19_long.txt nfail=0
+2026-11-23T04:08:45Z start llama31_8b-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=3cd5f4e7 pm=8aa32731 mu=
+2026-11-23T04:09:09Z llama31_8b-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
+2026-11-23T04:09:17Z llama31_8b-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.020549 ±   0.000618
+2026-11-23T04:09:30Z llama31_8b-q8_0 L=2048 pm rc=0 chunks_done=16 want=16 Mean    KLD:   0.031733 ±   0.000701
+2026-11-23T04:09:46Z llama31_8b-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
+2026-11-23T04:09:59Z llama31_8b-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.022755 ±   0.000666
+2026-11-23T04:10:11Z llama31_8b-q8_0 L=8192 pm rc=0 chunks_done=4 want=4 Mean    KLD:   0.035636 ±   0.000887
+2026-11-23T04:10:37Z llama31_8b-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:10:57Z llama31_8b-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.024809 ±   0.001217
+2026-11-23T04:11:16Z llama31_8b-q8_0 L=32768 pm rc=0 chunks_done=1 want=1 Mean    KLD:   0.037677 ±   0.001223
+2026-11-23T04:11:17Z done llama31_8b-q8_0 txt=pg19_text.txt nfail=0
+2026-11-23T04:13:41Z start llama31_8b-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=3cd5f4e7 pm=8aa32731 mu=
+2026-11-23T04:14:10Z llama31_8b-q8_0 L=4096 f16 rc=0 chunks_done=0 want=8 
+2026-11-23T04:14:21Z llama31_8b-q8_0 L=4096 q4_0 rc=0 chunks_done=8 want=8 Mean    KLD:   0.020976 ±   0.000567
+2026-11-23T04:14:32Z llama31_8b-q8_0 L=4096 pm rc=0 chunks_done=8 want=8 Mean    KLD:   0.033834 ±   0.000960
+2026-11-23T04:14:57Z llama31_8b-q8_0 L=16384 f16 rc=0 chunks_done=0 want=2 
+2026-11-23T04:15:12Z llama31_8b-q8_0 L=16384 q4_0 rc=0 chunks_done=2 want=2 Mean    KLD:   0.024856 ±   0.000730
+2026-11-23T04:15:26Z llama31_8b-q8_0 L=16384 pm rc=0 chunks_done=2 want=2 Mean    KLD:   0.039054 ±   0.001030
+2026-11-23T04:15:27Z done llama31_8b-q8_0 txt=pg19_text.txt nfail=0
+2026-11-23T04:23:13Z start llama31_8b-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=3cd5f4e7 pm=8aa32731 mu=
+2026-11-23T04:27:47Z llama31_8b-q8_0 L=65536 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:28:27Z llama31_8b-q8_0 L=65536 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.023354 ±   0.000484
+2026-11-23T04:29:08Z llama31_8b-q8_0 L=65536 pm rc=0 chunks_done=1 want=1 Mean    KLD:   0.036030 ±   0.000648
+2026-11-23T04:33:34Z llama31_8b-q8_0 L=131072 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:37:28Z llama31_8b-q8_0 L=131072 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.025572 ±   0.000349
+2026-11-23T04:42:22Z llama31_8b-q8_0 L=131072 pm rc=0 chunks_done=1 want=1 Mean    KLD:   0.039049 ±   0.000451
+2026-11-23T04:42:25Z done llama31_8b-q8_0 txt=pg19_long.txt nfail=0

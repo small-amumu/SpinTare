@@ -1,14 +1,14 @@
-2026-11-06T08:46:51Z start qwen25_7b-q8_0 gpu=0 ppl=e91d9500 gguf=bda7a6f3
-2026-11-06T08:47:33Z qwen25_7b-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
-2026-11-06T08:47:51Z qwen25_7b-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   5.458246 ±   0.022412
-2026-11-06T08:48:10Z qwen25_7b-q8_0 L=2048 q4_0norot rc=0 chunks_done=16 want=16 Mean    KLD:   6.201376 ±   0.021227
-2026-11-06T08:48:28Z qwen25_7b-q8_0 L=2048 q8_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.000792 ±   0.000043
-2026-11-06T08:48:55Z qwen25_7b-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
-2026-11-06T08:49:20Z qwen25_7b-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   5.835112 ±   0.023098
-2026-11-06T08:49:44Z qwen25_7b-q8_0 L=8192 q4_0norot rc=0 chunks_done=4 want=4 Mean    KLD:   6.710850 ±   0.019468
-2026-11-06T08:50:08Z qwen25_7b-q8_0 L=8192 q8_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.000764 ±   0.000049
-2026-11-06T08:50:44Z qwen25_7b-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
-2026-11-06T08:51:17Z qwen25_7b-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   6.955249 ±   0.022728
-2026-11-06T08:51:50Z qwen25_7b-q8_0 L=32768 q4_0norot rc=0 chunks_done=1 want=1 Mean    KLD:   8.061876 ±   0.017859
-2026-11-06T08:52:22Z qwen25_7b-q8_0 L=32768 q8_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.001058 ±   0.000061
-2026-11-06T08:52:22Z done qwen25_7b-q8_0
+2026-11-23T04:43:57Z start qwen25_7b-q8_0 gpu=2 ppl=feefc871 gguf=bda7a6f3
+2026-11-23T04:44:21Z qwen25_7b-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
+2026-11-23T04:44:28Z qwen25_7b-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   5.428110 ±   0.022405
+2026-11-23T04:44:36Z qwen25_7b-q8_0 L=2048 q4_0norot rc=0 chunks_done=16 want=16 Mean    KLD:   6.157916 ±   0.020960
+2026-11-23T04:44:44Z qwen25_7b-q8_0 L=2048 q8_0 rc=0 chunks_done=16 want=16 Mean    KLD:   0.001598 ±   0.000054
+2026-11-23T04:45:01Z qwen25_7b-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
+2026-11-23T04:45:13Z qwen25_7b-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   5.541993 ±   0.021769
+2026-11-23T04:45:24Z qwen25_7b-q8_0 L=8192 q4_0norot rc=0 chunks_done=4 want=4 Mean    KLD:   6.709149 ±   0.019297
+2026-11-23T04:45:36Z qwen25_7b-q8_0 L=8192 q8_0 rc=0 chunks_done=4 want=4 Mean    KLD:   0.001521 ±   0.000063
+2026-11-23T04:46:04Z qwen25_7b-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:46:24Z qwen25_7b-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   5.886597 ±   0.022220
+2026-11-23T04:46:45Z qwen25_7b-q8_0 L=32768 q4_0norot rc=0 chunks_done=1 want=1 Mean    KLD:   7.527103 ±   0.018435
+2026-11-23T04:47:05Z qwen25_7b-q8_0 L=32768 q8_0 rc=0 chunks_done=1 want=1 Mean    KLD:   0.001756 ±   0.000061
+2026-11-23T04:47:06Z done qwen25_7b-q8_0

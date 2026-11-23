@@ -1,30 +1,30 @@
-2026-11-06T12:36:46Z start q8_r1q7-q8_0 gpu=1 ppl=e91d9500 gguf=edb09fe4 pm=a3b55856 mu=
-2026-11-06T12:37:31Z q8_r1q7-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
-2026-11-06T12:37:52Z q8_r1q7-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   4.395614 ±   0.022072
-2026-11-06T12:38:10Z q8_r1q7-q8_0 L=2048 pm rc=0 chunks_done=16 want=16 Mean    KLD:   0.029226 ±   0.001167
-2026-11-06T12:38:30Z q8_r1q7-q8_0 L=2048 abbias rc=0 chunks_done=16 want=16 Mean    KLD:   0.009727 ±   0.000113
-2026-11-06T12:38:55Z q8_r1q7-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
-2026-11-06T12:39:20Z q8_r1q7-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   4.052788 ±   0.020878
-2026-11-06T12:39:44Z q8_r1q7-q8_0 L=8192 pm rc=0 chunks_done=4 want=4 Mean    KLD:   3.155587 ±   0.019543
-2026-11-06T12:40:10Z q8_r1q7-q8_0 L=8192 abbias rc=0 chunks_done=4 want=4 Mean    KLD:   0.007454 ±   0.000133
-2026-11-06T12:40:45Z q8_r1q7-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
-2026-11-06T12:41:18Z q8_r1q7-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   5.269762 ±   0.023266
-2026-11-06T12:41:51Z q8_r1q7-q8_0 L=32768 pm rc=0 chunks_done=1 want=1 Mean    KLD:   7.019106 ±   0.021884
-2026-11-06T12:42:28Z q8_r1q7-q8_0 L=32768 abbias rc=0 chunks_done=1 want=1 Mean    KLD:   0.010980 ±   0.000499
-2026-11-06T12:42:28Z done q8_r1q7-q8_0 txt=pg19_text.txt nfail=0
-2026-11-06T12:46:53Z start q8_r1q7-q8_0 gpu=0,1 ppl=e91d9500 gguf=edb09fe4 pm=a3b55856 mu=
-2026-11-06T12:48:07Z q8_r1q7-q8_0 L=65536 f16 rc=0 chunks_done=0 want=1 
-2026-11-06T12:49:03Z q8_r1q7-q8_0 L=65536 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   5.738863 ±   0.016624
-2026-11-06T12:50:01Z q8_r1q7-q8_0 L=65536 pm rc=0 chunks_done=1 want=1 Mean    KLD:   6.557929 ±   0.017194
-2026-11-06T12:51:33Z q8_r1q7-q8_0 L=65536 abbias rc=0 chunks_done=1 want=1 Mean    KLD:   0.021322 ±   0.000364
-2026-11-06T12:51:33Z done q8_r1q7-q8_0 txt=pg19_long.txt nfail=0
-2026-11-06T14:20:39Z start q8_r1q7-q8_0 gpu=1 ppl=e91d9500 gguf=edb09fe4 pm=a3b55856 mu=
-2026-11-06T14:21:27Z q8_r1q7-q8_0 L=4096 f16 rc=0 chunks_done=0 want=8 
-2026-11-06T14:21:50Z q8_r1q7-q8_0 L=4096 q4_0 rc=0 chunks_done=8 want=8 Mean    KLD:   4.138997 ±   0.021386
-2026-11-06T14:22:15Z q8_r1q7-q8_0 L=4096 pm rc=0 chunks_done=8 want=8 Mean    KLD:   0.791469 ±   0.011905
-2026-11-06T14:22:40Z q8_r1q7-q8_0 L=4096 abbias rc=0 chunks_done=8 want=8 Mean    KLD:   0.008075 ±   0.000132
-2026-11-06T14:23:09Z q8_r1q7-q8_0 L=16384 f16 rc=0 chunks_done=0 want=2 
-2026-11-06T14:23:36Z q8_r1q7-q8_0 L=16384 q4_0 rc=0 chunks_done=2 want=2 Mean    KLD:   4.334319 ±   0.020799
-2026-11-06T14:24:03Z q8_r1q7-q8_0 L=16384 pm rc=0 chunks_done=2 want=2 Mean    KLD:   5.292063 ±   0.021532
-2026-11-06T14:24:31Z q8_r1q7-q8_0 L=16384 abbias rc=0 chunks_done=2 want=2 Mean    KLD:   0.013282 ±   0.001040
-2026-11-06T14:24:31Z done q8_r1q7-q8_0 txt=pg19_text.txt nfail=0
+2026-11-23T04:03:22Z start q8_r1q7-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=edb09fe4 pm=febfdf8a mu=
+2026-11-23T04:05:37Z q8_r1q7-q8_0 L=2048 f16 rc=0 chunks_done=0 want=16 
+2026-11-23T04:05:45Z q8_r1q7-q8_0 L=2048 q4_0 rc=0 chunks_done=16 want=16 Mean    KLD:   4.385868 ±   0.022075
+2026-11-23T04:06:07Z q8_r1q7-q8_0 L=2048 pm rc=0 chunks_done=16 want=16 Mean    KLD:   0.031152 ±   0.001171
+2026-11-23T04:06:17Z q8_r1q7-q8_0 L=2048 abbias rc=0 chunks_done=16 want=16 Mean    KLD:   0.011560 ±   0.000126
+2026-11-23T04:06:34Z q8_r1q7-q8_0 L=8192 f16 rc=0 chunks_done=0 want=4 
+2026-11-23T04:06:47Z q8_r1q7-q8_0 L=8192 q4_0 rc=0 chunks_done=4 want=4 Mean    KLD:   4.045622 ±   0.020852
+2026-11-23T04:06:59Z q8_r1q7-q8_0 L=8192 pm rc=0 chunks_done=4 want=4 Mean    KLD:   3.164889 ±   0.019553
+2026-11-23T04:07:12Z q8_r1q7-q8_0 L=8192 abbias rc=0 chunks_done=4 want=4 Mean    KLD:   0.008973 ±   0.000120
+2026-11-23T04:07:41Z q8_r1q7-q8_0 L=32768 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:08:01Z q8_r1q7-q8_0 L=32768 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   5.259264 ±   0.023138
+2026-11-23T04:08:21Z q8_r1q7-q8_0 L=32768 pm rc=0 chunks_done=1 want=1 Mean    KLD:   7.036510 ±   0.021894
+2026-11-23T04:08:42Z q8_r1q7-q8_0 L=32768 abbias rc=0 chunks_done=1 want=1 Mean    KLD:   0.012396 ±   0.000402
+2026-11-23T04:08:44Z done q8_r1q7-q8_0 txt=pg19_text.txt nfail=0
+2026-11-23T04:11:17Z start q8_r1q7-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=edb09fe4 pm=febfdf8a mu=
+2026-11-23T04:11:51Z q8_r1q7-q8_0 L=4096 f16 rc=0 chunks_done=0 want=8 
+2026-11-23T04:12:02Z q8_r1q7-q8_0 L=4096 q4_0 rc=0 chunks_done=8 want=8 Mean    KLD:   4.132413 ±   0.021389
+2026-11-23T04:12:12Z q8_r1q7-q8_0 L=4096 pm rc=0 chunks_done=8 want=8 Mean    KLD:   0.790348 ±   0.011869
+2026-11-23T04:12:24Z q8_r1q7-q8_0 L=4096 abbias rc=0 chunks_done=8 want=8 Mean    KLD:   0.009286 ±   0.000105
+2026-11-23T04:12:56Z q8_r1q7-q8_0 L=16384 f16 rc=0 chunks_done=0 want=2 
+2026-11-23T04:13:10Z q8_r1q7-q8_0 L=16384 q4_0 rc=0 chunks_done=2 want=2 Mean    KLD:   4.314553 ±   0.020707
+2026-11-23T04:13:25Z q8_r1q7-q8_0 L=16384 pm rc=0 chunks_done=2 want=2 Mean    KLD:   5.244810 ±   0.021377
+2026-11-23T04:13:40Z q8_r1q7-q8_0 L=16384 abbias rc=0 chunks_done=2 want=2 Mean    KLD:   0.015483 ±   0.001172
+2026-11-23T04:13:41Z done q8_r1q7-q8_0 txt=pg19_text.txt nfail=0
+2026-11-23T04:15:27Z start q8_r1q7-q8_0 gpu=2 ppl=feefc871 ppl_pm=27b2c3ab gguf=edb09fe4 pm=febfdf8a mu=
+2026-11-23T04:19:01Z q8_r1q7-q8_0 L=65536 f16 rc=0 chunks_done=0 want=1 
+2026-11-23T04:21:44Z q8_r1q7-q8_0 L=65536 q4_0 rc=0 chunks_done=1 want=1 Mean    KLD:   5.701092 ±   0.016650
+2026-11-23T04:22:25Z q8_r1q7-q8_0 L=65536 pm rc=0 chunks_done=1 want=1 Mean    KLD:   6.587376 ±   0.017353
+2026-11-23T04:23:10Z q8_r1q7-q8_0 L=65536 abbias rc=0 chunks_done=1 want=1 Mean    KLD:   0.023096 ±   0.000367
+2026-11-23T04:23:12Z done q8_r1q7-q8_0 txt=pg19_long.txt nfail=0
