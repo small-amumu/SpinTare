@@ -17,7 +17,7 @@ Frozen results: `results/spintare/long_context_llamacpp/`
   four table models (R1-Distill-Qwen-7B, Qwen2.5-7B, Qwen3-0.6B, Llama-3.1-8B) with these scripts unchanged, on
   the SpinTare and postmean trees (`scripts/build_llama_cpp.sh`, the CMake options of the research tree below),
   TF32 off (`GGML_CUDA_CUBLAS_NO_TF32=1`).
-- `pro5000_control.json`: its control. The 41 cells measured earlier on the same card (2026-11-16) reproduce
+- `control_vst3.json`: its control. The 41 cells measured earlier on the same card (2026-11-16) reproduce
   exactly (identical printed D).
 - `v100_replication/`: the original run of the full grid (2026-11-06/07, one node with 2 x V100-16GB, LSF; one
   research tree, `llama.cpp-krot-llama` with its learned-rotation switch off, for every cell), including the
