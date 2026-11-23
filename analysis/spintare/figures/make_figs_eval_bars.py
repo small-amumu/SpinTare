@@ -3,9 +3,9 @@ Times, grouped bars with thin black edges, hatching per method, dashed grid behi
 top, green arrows with bold rotated gain labels. Colours keep this paper's earlier convention where
 it applies (amber = before / no repair, teal = after / SpinTare); 16-bit is the pale reference bar.
 
-Numbers are typed in from registered results (sec5_eval.tex tab:main, appendix tab:engine; vLLM port
-VP3 / PFX1a /
-PFX1b; SG1 engine gate ratios). Usage: python make_figs_eval_bars.py  -> fig_eval_*.pdf / .png (printed size).
+Only fig_eval_vllm (appendix fig:vllm) is a paper figure. Its numbers are typed in from the
+registered vLLM port rounds (VP3 / PFX1a / PFX1b).
+Usage: python make_figs_eval_bars.py  -> fig_eval_vllm.pdf / .png (printed size).
 """
 
 from __future__ import annotations
@@ -105,72 +105,6 @@ def save(fig, name: str) -> None:
     fig.savefig(OUT / f"{name}.png", dpi=300)
     plt.close(fig)
     print("wrote", name)
-
-
-# ------------------------------------------------------------------------------------------- 1
-# recovery (figure*)
-def fig_recovery() -> None:
-    cells = [
-        ("llama.cpp\nq4_0, rot.", 48.04, -46.83, -0.12),
-        ("vLLM\nFP8, tensor", 48.85, -45.08, -1.36),
-        ("vLLM\nFP8, tok.-head", 48.83, -45.50, -0.39),
-        ("vLLM\nINT4, tok.-head", 48.85, -46.20, -1.34),
-        ("SGLang\nNVFP4", 48.65, -30.43, -0.82),
-    ]
-    gsm = [
-        ("R1-Qwen-7B\nRTX PRO 5000", 93.5, 0.0, 93.0),
-        ("R1-Qwen-7B\nRTX 4080 S", 93.0, 0.0, 94.0),
-        ("R1-Qwen-1.5B", 87.0, 0.0, 87.5),
-    ]
-    fig, (a, b) = plt.subplots(
-        1, 2, figsize=(6.3, 2.2), gridspec_kw=dict(width_ratios=[5, 3.1], wspace=0.2)
-    )
-    w = 0.26
-    for ax, rows, ylab, top, title in (
-        (a, cells, "LongBench score", 62, "Qwen2.5-7B, LongBench (8K prompts)"),
-        (b, gsm, "GSM8K accuracy (%)", 118, "Long reasoning, llama.cpp q4_0"),
-    ):
-        for i, (_, ref, x1, x2) in enumerate(rows):
-            if ax is a:
-                bef, aft = ref + x1, ref + x2
-            else:
-                bef, aft = x1, x2
-            ax.bar(i - w, ref, w, color=C_REF, **EDGE)
-            ax.bar(i, bef, w, color=C_BEFORE, hatch="////", **EDGE)
-            ax.bar(i + w, aft, w, color=C_AFTER, hatch="\\\\\\\\", **EDGE)
-            if ax is b:  # the collapsed bar has zero height: say so
-                ax.text(
-                    i - 0.035,
-                    0.03 * top,
-                    "0.0",
-                    ha="right",
-                    va="bottom",
-                    fontsize=5.6,
-                    zorder=8,
-                    bbox=dict(boxstyle="square,pad=0.1", fc="white", ec="none"),
-                )
-            ax.text(i + w, aft + 0.012 * top, f"{aft:.1f}", ha="center", va="bottom", fontsize=5.6)
-            if i:
-                ax.axvline(i - 0.5, color="black", lw=0.5, zorder=2)
-        ax.set_xticks(range(len(rows)))
-        ax.set_xticklabels([r[0] for r in rows], linespacing=0.95)
-        ax.set_xlim(-0.5, len(rows) - 0.5)
-        ax.set_ylim(0, top)
-        ax.set_title(title, pad=2.5)
-        style(ax, ylab)
-    legend(
-        fig,
-        [
-            patch(C_REF, None, "16-bit cache"),
-            patch(C_BEFORE, "////", "Low-bit K cache, no repair"),
-            patch(C_AFTER, "\\\\\\\\", "SpinTare"),
-        ],
-        3,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.0),
-    )
-    fig.subplots_adjust(left=0.06, right=0.995, bottom=0.175, top=0.8)
-    save(fig, "fig_eval_recovery")
 
 
 # --------------------------------------------------------------------------------------------- 2
@@ -290,58 +224,5 @@ def fig_vllm() -> None:
     save(fig, "fig_eval_vllm")
 
 
-# ------------------------------------------------------------------------------------------ 3
-# exemption gate (column)
-def fig_gate() -> None:
-    cols = ("2K decode", "2K prefill", "32K decode")
-    data = (("Qwen2.5-7B", (0.787, 0.770, 0.826)), ("Qwen3-1.7B", (0.484, 0.496, 0.523)))
-    fig, ax = plt.subplots(figsize=(3.03, 1.5))
-    w = 0.34
-    for i in range(3):
-        for j, (_, vals) in enumerate(data):
-            x = i + (j - 0.5) * w
-            ax.bar(x, vals[i], w, color=(C_MID, C_AFTER)[j], hatch=("////", "\\\\\\\\")[j], **EDGE)
-            ax.text(
-                x,
-                vals[i] / 2,
-                f"{vals[i]:.2f}",
-                ha="center",
-                va="center",
-                fontsize=5.8,
-                fontweight="bold",
-                color="white" if j else "black",
-                zorder=8,
-                bbox=dict(boxstyle="round,pad=0.12", fc=(C_MID, C_AFTER)[j], ec="none"),
-            )
-        if i:
-            ax.axvline(i - 0.5, color="black", lw=0.5, zorder=2)
-    ax.axhline(1.0, color="black", lw=0.7, ls=(0, (4, 2)), zorder=4)
-    ax.text(
-        2.48,
-        1.075,
-        "rotary centring without the gate = 1",
-        ha="right",
-        va="bottom",
-        fontsize=5.8,
-        style="italic",
-    )
-    ax.set_xticks(range(3))
-    ax.set_xticklabels(cols)
-    ax.set_xlim(-0.5, 2.5)
-    ax.set_ylim(0, 1.2)
-    style(ax, "KL with gate / without")
-    legend(
-        ax,
-        [patch(C_MID, "////", data[0][0]), patch(C_AFTER, "\\\\\\\\", data[1][0])],
-        2,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 1.0),
-    )
-    fig.subplots_adjust(left=0.135, right=0.99, bottom=0.135, top=0.855)
-    save(fig, "fig_eval_gate_col")
-
-
 if __name__ == "__main__":
-    fig_recovery()
     fig_vllm()
-    fig_gate()

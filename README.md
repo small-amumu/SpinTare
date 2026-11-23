@@ -20,7 +20,7 @@
 ---
 
 Four-bit K caches collapse some models without any error: on LongBench, Qwen2.5-7B drops from 48.0 to
-1.2 points under llama.cpp `q4_0`, and it fails similarly in vLLM and SGLang. The cause is a key
+1.2 points under llama.cpp `q4_0`, and it fails similarly in vLLM. The cause is a key
 offset shared across tokens. The usual fix subtracts a calibrated channel mean and assumes that centring
 is neutral for the quantizer. It is not, in three ways:
 

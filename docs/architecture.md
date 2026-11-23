@@ -24,8 +24,7 @@ vLLM  (patches/vllm/spintare-addback.patch, 5cb0fd265 + integrations/vllm, backe
 
 Static post-RoPE mean (the baseline): `LLAMA_KV_POSTMEAN` in the postmean tree
 (`patches/llama.cpp/postmean-static-mean.patch`), the `SPINTARE` vLLM backend or the vLLM import hook
-`experiments/spintare/tasks/vllm_site/kv_postmean.py`, and an import hook for SGLang
-(`experiments/spintare/engine_sglang/`).
+`experiments/spintare/tasks/vllm_site/kv_postmean.py`.
 
 ## Python package `spintare/`
 
