@@ -1,0 +1,17 @@
+(a) Qwen2.5-1.5B-Instruct        int4_stock=7.1242 int4_59674=0.01408 int4_ab_v1f=0.010214 fp8_stock=1.7402 fp8_ab_v1f=0.0016993
+(a) Qwen2.5-7B-Instruct          int4_stock=6.7095 int4_59674=0.01718 int4_ab_v1f=0.01486 fp8_stock=4.8588 fp8_ab_v1f=0.0020962
+(a) Meta-Llama-3.1-8B-Instruct   int4_stock=0.016849 int4_59674=0.016849 int4_ab_v1f=0.0070838 fp8_stock=0.0024368 fp8_ab_v1f=0.0012874
+(b) int4         attention     630.3 ms x1.00 of stock | kv_write 0.0 other 850.5 total 7649.2 ms
+(b) fp8          attention     855.4 ms x1.00 of stock | kv_write 0.0 other 37.7 total 7070.4 ms
+(b) int4_ab_v0t  attention    3106.0 ms x4.93 of stock | kv_write 3.6 other 988.6 total 10094.8 ms
+(b) int4_ab_v1f  attention    1159.4 ms x1.84 of stock | kv_write 3.9 other 895.6 total 8208.7 ms
+(b) fp8_ab_v0t   attention    3179.3 ms x3.72 of stock | kv_write 3.6 other 195.3 total 9332.2 ms
+(b) fp8_ab_v1f   attention    1523.9 ms x1.78 of stock | kv_write 3.9 other 98.9 total 7786.1 ms
+(c) int4           2740.3 out tok/s spread 1.3% vs stock 1.0
+(c) fp8            2837.1 out tok/s spread 0.2% vs stock 1.0
+(c) int4_ab_v0t    1779.0 out tok/s spread 0.4% vs stock 0.6492118685228466
+(c) int4_ab_v1f    2403.7 out tok/s spread 0.2% vs stock 0.8771749775406732
+(c) fp8_ab_v0t     1817.7 out tok/s spread 0.1% vs stock 0.640690134544113
+(c) fp8_ab_v1f     2386.0 out tok/s spread 0.6% vs stock 0.8410016093668002
+(c) stock int4 re-time 2739.3 (informational)
+VPD CONTROLS PASS

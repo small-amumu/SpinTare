@@ -56,17 +56,16 @@ now use the paper's current name of the gate).
 | `tab:kl32`, `tab:kl32_non_qwen` | 32K output KL, 12 models, incl. running mean | LC1 + `long_context_lc1/run_t2.sh` | 32K bucket of `res_lc1_agg.json`, `res_t2_agg.json` | RTX 5090 D |
 | `tab:gate` (top) | KL inside / beyond the calibration window, R1-Distill-Qwen-7B | `tasks/kl_by_context.sh` | - | RTX PRO 5000 |
 | `tab:gate` (bottom) | LongBench with / without the gate | `tasks/run_llamacpp_cell.sh longbench spintare\|nogate` | - | RTX 5090 D |
-| `tab:length_engine` | KL by context length in llama.cpp | `long_context_llamacpp/run_all.sh` | `make_ch5_figs.py` <- `long_context_llamacpp/e2_final.json` (`e2_analyze.py` <- `run_logs/`) | see its README |
+| `tab:length_engine` | KL by context length in llama.cpp | `long_context_llamacpp/run_all.sh` | `make_ch5_figs.py` <- `long_context_llamacpp/e2_final.json` (`e2_analyze.py` <- `run_logs/`); V100 replication in `v100_replication/` | RTX PRO 5000 |
 | `tab:rho` | residual energy rho: prediction vs measurement | LC1 | `make_ch5_bars.py` <- `res_lc1_agg.json` | RTX 5090 D |
 | `tab:row_gate` | exemption gate vs no gate / first row only | `exemption_gate_c23/run_c23.sh` | `make_ch5_figs.py` <- `exemption_gate_c23/res_c23_agg.json` | RTX PRO 5000 |
 | `tab:gate_ruler` | RULER 32K with / without the gate | `tasks/run_llamacpp_cell.sh ruler spintare\|nogate` | - | RTX 5090 D |
 | `tab:failure_causes` | where long reasoning fails | reasoning cells | `make_ch5_figs.py` <- `reasoning_r1/` | RTX PRO 5000 |
-| `fig:vllm` | vLLM output KL, kernel time, throughput | `integrations/vllm` (`kld`, `pf_bench`) | `make_figs_eval_bars.py` (numbers typed in from the registered runs) | - |
+| `fig:vllm` | vLLM output KL, kernel time, throughput | `vllm_figure/vpd_chain.sh` (`integrations/vllm`: `kld`, `pf_bench`) | `make_figs_eval_bars.py` <- `vllm_figure/vpd_result.json` | RTX PRO 5000 |
 | `fig:app_residual` | left-over offset after a static mean | LC1 | `make_figs.py` <- `res_lc1_agg.json` | RTX 5090 D |
-| `fig:app_layers`, `fig:app_keys` | full layer bits; key scatter plots | as `fig:layers`, `fig:keys_scatter` | `make_figs_ch3.py` | - |
+| `fig:app_layers` | full layer bits | as `fig:layers` | `make_figs_ch3.py` | - |
 | `fig:app_decode` | decode slowdown of the add-back and the gate | `decode_overhead/ov2_time.sh`, `sg2_time.sh` | `make_figs.py` <- `decode_overhead/*.json` | RTX 5090 D |
 | `tab:ablation` | further ablations | LC1, C23 | `res_lc1_agg.json`, `res_c23_agg.json` | - |
-| `fig:overview` | workflow | drawn (`docs/figures/fig_overview.png`) | - | - |
 | `fig:sink_gate` | exemption gate in simulation (a) and engine (b) | LC1; `decode_overhead/sg2_acc.sh` | `make_figs.py` <- `res_lc1_agg.json`, `decode_overhead/res_sg1_acc_agg.json` | RTX 5090 D |
 
 Paths in the tables are relative to `experiments/spintare/`, `results/spintare/` and

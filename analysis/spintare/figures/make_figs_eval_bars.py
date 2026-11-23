@@ -3,13 +3,15 @@ Times, grouped bars with thin black edges, hatching per method, dashed grid behi
 top, green arrows with bold rotated gain labels. Colours keep this paper's earlier convention where
 it applies (amber = before / no repair, teal = after / SpinTare); 16-bit is the pale reference bar.
 
-Only fig_eval_vllm (appendix fig:vllm) is a paper figure. Its numbers are typed in from the
-registered vLLM port rounds (VP3 / PFX1a / PFX1b).
+Only fig_eval_vllm (appendix fig:vllm) is a paper figure. It reads the frozen report of the vLLM
+run on one RTX PRO 5000 (results/spintare/vllm_figure/vpd_result.json, run script in
+experiments/spintare/vllm_figure).
 Usage: python make_figs_eval_bars.py  -> fig_eval_vllm.pdf / .png (printed size).
 """
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -19,6 +21,9 @@ import matplotlib.pyplot as plt
 # figures are written next to this file unless FIG_OUT names another directory
 OUT = Path(os.environ.get("FIG_OUT", Path(__file__).resolve().parent))
 OUT.mkdir(parents=True, exist_ok=True)
+VLLM_RESULT = (
+    Path(__file__).resolve().parents[3] / "results" / "spintare" / "vllm_figure" / "vpd_result.json"
+)
 mpl.rcParams.update(
     {
         "font.family": "serif",
@@ -113,15 +118,16 @@ def fig_vllm() -> None:
     fig, (a, b, c) = plt.subplots(
         1, 3, figsize=(6.3, 1.85), gridspec_kw=dict(width_ratios=[3.5, 2, 2], wspace=0.34)
     )
+    r = json.loads(VLLM_RESULT.read_text(encoding="utf-8"))
+    assert r["controls"] == "PASS", "the vLLM run did not pass its controls"
     # (a) output KL, log scale: stock / PR #59674 (INT4 only) / SpinTare
-    kl = [
-        ("Qwen2.5\n1.5B", 7.43158, 0.0138, 0.01021),
-        ("Qwen2.5\n7B", 6.54456, 0.0178, 0.01480),
-        ("Llama-3.1\n8B", 0.01718, 0.0172, 0.00693),
-        ("Qwen2.5\n1.5B", 1.64114, None, 0.00172),
-        ("Qwen2.5\n7B", 4.95658, None, 0.00211),
-        ("Llama-3.1\n8B", 0.00245, None, 0.00126),
-    ]
+    lab = {
+        "Qwen2.5-1.5B-Instruct": "Qwen2.5\n1.5B",
+        "Qwen2.5-7B-Instruct": "Qwen2.5\n7B",
+        "Meta-Llama-3.1-8B-Instruct": "Llama-3.1\n8B",
+    }
+    kl = [(lab[m], v["int4_stock"], v["int4_59674"], v["int4_ab_v1f"]) for m, v in r["kl"].items()]
+    kl += [(lab[m], v["fp8_stock"], None, v["fp8_ab_v1f"]) for m, v in r["kl"].items()]
     w = 0.26
     for i, (_, s, pr, st) in enumerate(kl):
         a.bar(i - w, s, w, color=C_BEFORE, hatch="////", **EDGE)
@@ -160,12 +166,10 @@ def fig_vllm() -> None:
     a.set_xlim(-0.5, len(kl) - 0.5)
     a.set_title("(a) Output KL to the 16-bit cache", pad=2.5)
     style(a, "KL (nats, log scale)")
-    # (b) attention kernel time, eager, Llama-3.1-8B: stock / add-back before / after the tf32x3
-    # kernel
-    # PFX1a (rq check DONE), eager, 128 requests 512/64: stock, add-back v0 / torch write (PF1
-    # configuration),
-    # add-back v1 tf32x3 / fused write (the shipped v1f)
-    tm = [("INT4", 600.9, 2530.6, 1135.3), ("FP8", 722.3, 2785.4, 1264.5)]
+    # (b) attention kernel time, eager, 128 requests 512/64, Llama-3.1-8B: stock, add-back v0 with
+    # the torch write (before optimisation), add-back v1 tf32x3 read with the fused write (shipped)
+    km = {k: v["attention"] for k, v in r["kernel_ms"].items()}
+    tm = [(f.upper(), km[f], km[f"{f}_ab_v0t"], km[f"{f}_ab_v1f"]) for f in ("int4", "fp8")]
     for i, (_, s, v0, v1) in enumerate(tm):
         b.bar(i - w, s, w, color=C_BEFORE, hatch="////", **EDGE)
         b.bar(i, v0, w, color=C_MID, hatch="xxxx", **EDGE)
@@ -188,11 +192,15 @@ def fig_vllm() -> None:
     b.set_xticks(range(2))
     b.set_xticklabels([r[0] for r in tm])
     b.set_xlim(-0.5, 1.5)
-    b.set_ylim(0, 3300)
+    b.set_ylim(0, 3600)
     b.set_title("(b) Attention kernel time", pad=2.5)
     style(b, "Time (ms)")
     # (c) end-to-end throughput relative to stock, CUDA graphs, Llama-3.1-8B
-    tp = [("INT4", 0.74, 0.90), ("FP8", 0.69, 0.90)]
+    t = r["throughput"]
+    tp = [
+        (f.upper(), t[f"{f}_ab_v0t"]["vs_stock"], t[f"{f}_ab_v1f"]["vs_stock"])
+        for f in ("int4", "fp8")
+    ]
     w2 = 0.3
     for i, (_, v0, v1) in enumerate(tp):
         c.bar(i - w2 / 2, v0, w2, color=C_MID, hatch="xxxx", **EDGE)

@@ -1,0 +1,52 @@
+{
+ "arm": "int4_ab",
+ "model": "<models>/Meta-Llama-3.1-8B-Instruct",
+ "kv": "int4_per_token_head",
+ "backend_requested": "SPINTARE_AB",
+ "backend_used": "AttentionConfig(backend=<AttentionBackendEnum.SPINTARE_AB: 'spintare_vllm.addback.SpinTareAddbackBackend'>, minimax_m3_msa_decode_backend='cutlass', backend_per_kind={}, flash_attn_version=None, flash_attn_max_num_splits_for_cuda_graph=32, tokenspeed_mla_min_split_kv=1, tq_max_kv_splits_for_cuda_graph=32, use_trtllm_attention=None, disable_flashinfer_q_quantization=False, mla_prefill_backend=None, use_prefill_query_quantization=False, trtllm_ragged_backend='trtllm-gen', indexer_kv_dtype='auto', indexer_decode_cp=False, indexer_sparse_logits=None, indexer_logits_dtype='auto', indexer_tp_shard_min_rows=None, sparse_mla_shard_q=True, sparse_mla_shard_q_min_tokens=1024, minimax_m3_indexer_cp=False, hisparse_config=None, use_non_causal=False, sparse_mla_force_mqa=False, sparse_mla_prefill_workspace_factor=5, flex_attn_block_m=None, flex_attn_block_n=None, flex_attn_q_block_size=None, flex_attn_kv_block_size=None)",
+ "n": 16,
+ "in_len": 512,
+ "out_len": 256,
+ "seed": 0,
+ "eager": true,
+ "util": 0.9,
+ "max_num_seqs": 256,
+ "num_gpu_blocks": 12348,
+ "block_size": 64,
+ "wall_s": 9.301266344031319,
+ "out_tokens": 4096,
+ "out_tok_s": 440.3701440748903,
+ "total_tok_s": 1321.1104322246708,
+ "req_s": 1.7201958752925401,
+ "all_full_length": true,
+ "addback_impls": 32,
+ "mu": "<work>/results/vp2/Meta-Llama-3.1-8B-Instruct/m.kvmr",
+ "env": {
+  "torch_uuid": "77f8da55-192a-b347-58a3-8ee1b4f041bd",
+  "cards": [
+   "2, GPU-77f8da55-192a-b347-58a3-8ee1b4f041bd, 44009 MiB, 64 %"
+  ],
+  "compute_apps": [
+   "GPU-77f8da55-192a-b347-58a3-8ee1b4f041bd, 3094686, 43986 MiB, <work>/venv312/bin/python"
+  ],
+  "vllm_file": "<work>/vllm_ab2/vllm/__init__.py",
+  "vllm_version": "0.34.0rc1.dev468+g5cb0fd265",
+  "torch": "2.14.0+cu132",
+  "torch_cuda": "13.2",
+  "triton": "3.8.0",
+  "driver": "595.99.02",
+  "gpu": "NVIDIA RTX PRO 5000 Blackwell",
+  "cc": "12.0",
+  "visible": "2",
+  "attn_impls": [
+   "SpinTareAddbackImpl"
+  ]
+ },
+ "mu_md5": "afcd070efa33503d6eb1c43f1fce472b",
+ "script_md5": "f595c00db7684c652b0b7141b235afa7",
+ "out_digest": "406cd7600e4b379a191c710b402b2c9328e1e1e0",
+ "profile_wall_s": 9.568239601096138,
+ "profile_dir": "<work>/results/vpd/traces/prof_int4_ab_v1f",
+ "profile_n": 128,
+ "profile_out_len": 64
+}

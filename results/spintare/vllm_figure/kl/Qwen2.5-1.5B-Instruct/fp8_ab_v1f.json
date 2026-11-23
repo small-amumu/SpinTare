@@ -1,0 +1,29 @@
+{
+ "model": "<models>/Qwen2.5-1.5B-Instruct",
+ "kv": "fp8_per_token_head",
+ "backend": "SPINTARE_AB",
+ "graph": false,
+ "postmean_file": null,
+ "postmean_md5": null,
+ "spintare_impls": 0,
+ "addback_file": "<work>/results/vp2/Qwen2.5-1.5B-Instruct/m.kvmr",
+ "addback_md5": "12b989f53afa8bcdae86ec09aa957b5b",
+ "addback_gate": "1",
+ "addback_impls": 28,
+ "text": "<work>/data/diag_text.txt",
+ "ctx": 2048,
+ "first": 1024,
+ "chunks": 4,
+ "script_md5": "739a5d7f5e8b7833aff0b9f6c0238c7f",
+ "secs": 11.2,
+ "addback_writes": 560,
+ "D": 0.001699278480373323,
+ "D_chunks": [
+  0.0016177950892597437,
+  0.001603368204087019,
+  0.0019554640166461468,
+  0.0016204866115003824
+ ],
+ "top1_same": 0.97802734375,
+ "n": 4096
+}

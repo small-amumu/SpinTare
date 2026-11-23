@@ -1,0 +1,29 @@
+{
+ "model": "<models>/Meta-Llama-3.1-8B-Instruct",
+ "kv": "int4_per_token_head",
+ "backend": "TRITON_ATTN",
+ "graph": false,
+ "postmean_file": null,
+ "postmean_md5": null,
+ "spintare_impls": 0,
+ "addback_file": null,
+ "addback_md5": null,
+ "addback_gate": null,
+ "addback_impls": 0,
+ "text": "<work>/data/diag_text.txt",
+ "ctx": 2048,
+ "first": 1024,
+ "chunks": 4,
+ "script_md5": "739a5d7f5e8b7833aff0b9f6c0238c7f",
+ "secs": 10.2,
+ "addback_writes": 0,
+ "D": 0.0168488509953022,
+ "D_chunks": [
+  0.01576698012650013,
+  0.020969824865460396,
+  0.01658618077635765,
+  0.014072421938180923
+ ],
+ "top1_same": 0.941650390625,
+ "n": 4096
+}

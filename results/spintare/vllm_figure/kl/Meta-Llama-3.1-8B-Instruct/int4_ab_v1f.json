@@ -1,0 +1,29 @@
+{
+ "model": "<models>/Meta-Llama-3.1-8B-Instruct",
+ "kv": "int4_per_token_head",
+ "backend": "SPINTARE_AB",
+ "graph": false,
+ "postmean_file": null,
+ "postmean_md5": null,
+ "spintare_impls": 0,
+ "addback_file": "<work>/results/vp2/Meta-Llama-3.1-8B-Instruct/m.kvmr",
+ "addback_md5": "afcd070efa33503d6eb1c43f1fce472b",
+ "addback_gate": "1",
+ "addback_impls": 32,
+ "text": "<work>/data/diag_text.txt",
+ "ctx": 2048,
+ "first": 1024,
+ "chunks": 4,
+ "script_md5": "739a5d7f5e8b7833aff0b9f6c0238c7f",
+ "secs": 12.2,
+ "addback_writes": 640,
+ "D": 0.007083762902766466,
+ "D_chunks": [
+  0.0064467499032616615,
+  0.00789629202336073,
+  0.007239564321935177,
+  0.006752445362508297
+ ],
+ "top1_same": 0.9541015625,
+ "n": 4096
+}

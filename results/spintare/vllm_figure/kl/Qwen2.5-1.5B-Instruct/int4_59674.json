@@ -1,0 +1,29 @@
+{
+ "model": "<models>/Qwen2.5-1.5B-Instruct",
+ "kv": "int4_per_token_head",
+ "backend": "TRITON_ATTN",
+ "graph": false,
+ "postmean_file": null,
+ "postmean_md5": null,
+ "spintare_impls": 0,
+ "addback_file": null,
+ "addback_md5": null,
+ "addback_gate": null,
+ "addback_impls": 0,
+ "text": "<work>/data/diag_text.txt",
+ "ctx": 2048,
+ "first": 1024,
+ "chunks": 4,
+ "script_md5": "739a5d7f5e8b7833aff0b9f6c0238c7f",
+ "secs": 11.5,
+ "addback_writes": 0,
+ "D": 0.014079917222261429,
+ "D_chunks": [
+  0.01348782330751419,
+  0.015503790229558945,
+  0.013207226060330868,
+  0.014120832085609436
+ ],
+ "top1_same": 0.939697265625,
+ "n": 4096
+}
