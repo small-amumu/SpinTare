@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 # Download the LongBench (v1) English subtasks used by `spintare longbench` into DATA_DIR
 # (default ./data/longbench). The download is pinned to one revision of the dataset repository and
 # checked against its sha256. The four default tasks of `spintare longbench` are hotpotqa, 2wikimqa,

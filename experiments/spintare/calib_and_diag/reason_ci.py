@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Paired bootstrap of the accuracy difference between two lc_reason_vllm.py result files (same
 items).
 

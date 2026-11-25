@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Simulated attention KL for vLLM's int4_per_token_head KV format.
 
 Follows the write path of vllm/v1/attention/ops/int4_per_token_head.py at vLLM commit 0c16eee3 (vLLM

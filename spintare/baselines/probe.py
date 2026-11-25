@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """One clean 16-bit forward per model: every per-model feature used by the detection baselines.
 
 Nothing is quantised in the model's forward pass. The hook only reads the post-RoPE queries and keys

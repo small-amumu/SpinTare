@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """LongBench on llama.cpp with a real quantized K cache; prompts, truncation and scoring as lb.py.
 
 Client only: llama-server must already run on --port (e.g. -fa on -ctk <K type> -ctv q8_0).

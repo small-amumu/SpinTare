@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Static post-RoPE key mean for Qwen2.5-VL (text decoder), for LLAMA_KV_POSTMEAN on the qwen2vl
 graph.
 

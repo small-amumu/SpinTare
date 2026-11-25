@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """N13 (= n1_rules.py with SELECT_N = 99: every eligible candidate is selected). N1 docstring
 follows:
 

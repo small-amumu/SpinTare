@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Find the engine's K channel order from the GGUF weights: HF order (Qwen2 / Qwen3) or the HF order
 permuted by gguf_perm (Llama-family conversions).
 

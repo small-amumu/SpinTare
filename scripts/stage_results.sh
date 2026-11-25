@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 # Link the shipped frozen results into $KVREL_WORK under the directory names the aggregators were written for
 # (gatepred, predp, n1, n4, n13, lc1), so that e.g.
 #   python analysis/spintare/z_analyses.py

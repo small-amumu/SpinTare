@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Long chain-of-thought accuracy on a vLLM OpenAI-compatible server, same data / prompt / sampling
 / scoring as lc_reason.py (R1 template, temperature 0.6, top_p 0.95, seed 1000 + item, max 8192 new
 tokens).

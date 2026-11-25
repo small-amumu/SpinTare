@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Synthetic end-to-end test of vpd_analyze.py: a passing tree, then three broken copies.
 
 usage: python test_vpd_analyze.py   (exit 0 = every case gives the expected exit code)

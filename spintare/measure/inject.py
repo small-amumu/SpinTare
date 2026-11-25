@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Controlled injection of a shared pre-RoPE key offset into a released checkpoint.
 
 A pre-RoPE key offset on the slowest RoPE pairs (HF rotate_half layout: dims [d/2-P, d/2) and [d-P,

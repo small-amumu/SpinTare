@@ -164,7 +164,7 @@ If you use this software, please cite the repository ([CITATION.cff](CITATION.cf
 ```bibtex
 @software{spintare2026,
   title   = {SpinTare: detection and mitigation of offset-induced K-cache collapse},
-  author  = {{The SpinTare Authors}},
+  author  = {Hu, Zijie},
   year    = {2026},
   version = {0.1.0},
   url     = {https://github.com/small-amumu/SpinTare}

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Exact attention and text windows for c23_kl.py.
 
 Copied from the simulation harness the registered C23 runs imported (pkv5_q.attend with name None,

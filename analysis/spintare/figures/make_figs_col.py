@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Single-column versions (3.0 in wide, included unscaled, text >= 6 pt),
 2026-11-13.
 

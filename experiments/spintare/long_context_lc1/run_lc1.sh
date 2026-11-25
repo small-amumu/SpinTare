@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 # LC1 (REGISTRATION_LC1.md + A1): static mean-centring of post-RoPE keys at 32K context, twelve models with bfloat16
 # weights, then three small models again with float32 weights (control for the rotary tables, not aggregated).
 # One RTX 5090 D; the card lock is held for the whole queue, so the queue starts when the timing

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """ME1-ME7 (PREDICTIONS.md "BL / AB / ME design" 15:06:53Z and "ME amendment 1" 15:28:58Z): the
 collapse mechanism along attention, simulated in Hugging Face with the same hook as b4_sim.py (wrap
 apply_rotary_pos_emb).

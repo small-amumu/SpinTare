@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """SpinTare for vLLM: pre-deployment check and postmean repair for low-bit KV caches.
 
 Installed as a vLLM general plugin (entry point group `vllm.general_plugins`): `register()` adds two

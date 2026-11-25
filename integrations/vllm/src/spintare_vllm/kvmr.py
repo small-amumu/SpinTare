@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Pre-RoPE key mean with the model's RoPE frequencies (KVMR files) and the fp32 RoPE table.
 
 Layout (little endian): b"KVMR", int32 version (1), n_layer, n_head_kv, head_dim, then float32

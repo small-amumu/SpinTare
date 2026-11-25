@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Configuration check for the vLLM INT4 per-token-head cache: b_top2 and its decision (two worst
 layers, frozen tau_b).
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Layer-wise restoration of a quantised K cache (Hugging Face simulation).
 
 All layers' K are quantised; then layers are put back to 16-bit to see where the output damage comes

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Sanity check of an injected checkpoint (`spintare inject`) against its source (CPU, bf16).
 
 Checks: (1) the injected k bias minus the source k bias is non-zero only on the slow RoPE dims

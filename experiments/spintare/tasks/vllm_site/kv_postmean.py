@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """kv_postmean: static postmean for the vLLM kernel build (5cb0fd265d): subtract a static post-RoPE
 key mean m from K before the cache write, for Qwen2 (Qwen2.5) and Qwen3 attention.
 

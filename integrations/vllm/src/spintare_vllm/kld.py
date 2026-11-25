@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """One KL pass in vLLM: token-level KL(reference || candidate) from vLLM's full-vocabulary logits.
 
 Protocol (same as the llama.cpp check and E3): the first CHUNKS x CTX tokens of a fixed text, one

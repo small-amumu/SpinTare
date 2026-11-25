@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """T6c controlled injection (v2 of inject_offset.py; the T6 script is left unchanged).
 
 Same construction as T6: a pre-RoPE key offset on the slowest RoPE pairs (HF rotate_half layout:

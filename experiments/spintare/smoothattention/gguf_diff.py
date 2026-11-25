@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """CH4Z gate G1: tensor-level comparison of an original GGUF and its SmoothAttention-folded GGUF.
 
 Every tensor outside the folded set must have the same type, shape and bytes; every tensor in the

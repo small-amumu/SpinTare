@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Start-up of every `vllm serve` process of the vLLM task cells (run_vllm_cell.sh puts this
 directory on PYTHONPATH).
 

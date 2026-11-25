@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Data figures (two-column width), read from the registered aggregate files only.
 
 fig_length_kl     : KL vs position, 5 collapsing models, arms none / static mean / rotary centring / + exemption gate (LC1, sim)

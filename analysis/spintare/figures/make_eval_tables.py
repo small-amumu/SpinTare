@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Evaluation bar figures and LaTeX tables in the style of fig_eval_vllm (make_figs_eval_bars.py).
 
 Five results are figures (vLLM bars, gate heatmap, length-KL panels, position heatmap, Pareto); every

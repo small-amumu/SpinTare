@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Evaluation bar figures for SpinTare in the style of VecInfer (ACL 2026, Figs. 6-8):
 Times, grouped bars with thin black edges, hatching per method, dashed grid behind, framed legend on
 top, green arrows with bold rotated gain labels. Colours keep SpinTare's earlier convention where

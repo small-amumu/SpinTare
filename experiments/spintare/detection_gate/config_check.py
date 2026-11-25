@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Configuration check of one model from its probe output (b_top2 of the two worst layers).
 
 b_l is the effective bits of layer l in one K format, b_meas of the probe (kvprobe_unified.py, or

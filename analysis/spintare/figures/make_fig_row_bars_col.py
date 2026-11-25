@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """fig_row_bars_col (single column, 3.0 in, included unscaled; plain-bar replacement for
 fig_keys_scatter_col).
 

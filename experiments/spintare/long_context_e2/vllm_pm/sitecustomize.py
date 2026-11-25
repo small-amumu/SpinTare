@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Postmean for vLLM Qwen2 attention (B4-V8): subtract a static post-RoPE key mean m from K before
 the cache write.
 

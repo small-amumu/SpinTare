@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Compare HF tokens (no special tokens) with llama-tokenize --ids output of the same text.
 
 Usage: python tokcheck.py <hf dir> <text> <engine ids file>; exit 0 iff the id lists are equal.

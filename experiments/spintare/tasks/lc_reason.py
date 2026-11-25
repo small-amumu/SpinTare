@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """CH4X copy of lc_reason.py (ad33ed04) with --start (global item index for the seed and the
 record). CH4X A5: + --journal (each finished record is appended to a JSONL journal as it completes;
 on start the items already in the journal are skipped, so a run cut by a server crash resumes;

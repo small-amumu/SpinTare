@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Q4_0 / Q8_0 round trips with llama.cpp's exact semantics, and a check against the real ggml
 library through ctypes (used by c23_kl.py, which compares q4x / q8x with ggml bit for bit on three
 layers of every run).

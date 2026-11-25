@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """SpinTare rotary centring with exact score-side add-back and the exemption gate, for vLLM.
 
 Write path (do_kv_cache_update): the post-RoPE key k_p = R(p) k of every new token is cached as
