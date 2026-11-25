@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 # X5 runner (CPU only). Usage: bash x5_run.sh smoke|full
 # smoke: real configs with 4 random-weight layers; full: the real models. Models run one after another.
 set -uo pipefail

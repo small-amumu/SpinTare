@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """kvsel: probe -> KV-cache configuration selector for SpinTare."""
 
 from .metrics import ModelMetrics, from_probe

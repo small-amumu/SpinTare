@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """CLI.
 
   probe:  one 16-bit forward with SpinTare's kvprobe_unified.py (GPU or CPU), writes probe.json

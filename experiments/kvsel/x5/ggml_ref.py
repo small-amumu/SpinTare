@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """The X5 run imported a byte-identical copy of spintare/ggml_ref.py (md5 c40c8eb1) from this
 folder; in the repository this module re-exports the library one."""
 

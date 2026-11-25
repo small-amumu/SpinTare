@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Model metrics for the selector, read from one 16-bit probe pass.
 
 The probe is SpinTare's kvprobe_unified.py (one forward, no quantisation in the model): it writes

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Evidence constants for the KV-cache selector.
 
 Every number here comes from an existing measurement (SpinTare runs in results/spintare/) or from

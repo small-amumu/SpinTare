@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Probe -> configuration selector for a SpinTare K cache.
 
 One quantised K/V format on the GPU; the configuration check decides per K format whether it runs

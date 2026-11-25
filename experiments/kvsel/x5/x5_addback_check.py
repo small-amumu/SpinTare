@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """X5: rotary centring with exact add-back on partial / interleaved RoPE and NoPE layers (CPU only).
 
 One bf16 forward on a calibration text (pre-RoPE key mean mu per layer and KV head, as SpinTare's

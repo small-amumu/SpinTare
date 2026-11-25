@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Offline check of the kvsel selector on existing data (no GPU, reads stored results only).
 
 A. SpinTare cells (llama.cpp K formats, LongBench labels): fitting set (60 natural cells), held-out
