@@ -11,10 +11,10 @@ Drivers of the registered timing, accuracy and profiling runs on one RTX 5090 D 
 | `sg2_acc.sh` | SG2 E1 / E2 | output KL with the gate off and on (decode and prefill graphs); compared with the unfused gate (SG1), whose output it reproduces |
 | `sg2_prof.sh`, `sg2b_prof.sh` | SG2 profiles | `nsys` breakdown of the gate's cost (descriptive) |
 
-The engine is the SpinTare tree (`scripts/build_llama_cpp.sh spintare`, `B6` in the scripts). The
+The engine is the SpinTare tree (`experiments/scripts/build_llama_cpp.sh spintare`, `B6` in the scripts). The
 OV2 accuracy and timing scripts also read the October add-back tree (`B3`, OV1) as a reference arm; that
 tree is not part of this repository. The scripts check the md5 of their original inputs (GGUFs, texts,
 binaries) before they run, so a re-run needs the same files or edited checks.
 
-The figure is re-derived from the shipped aggregates (`results/spintare/decode_overhead/*.json`) by
-`analysis/spintare/figures/make_figs.py`; the per-round logs are not shipped.
+The figure is re-derived from the shipped aggregates (`experiments/results/spintare/decode_overhead/*.json`) by
+`experiments/analysis/spintare/figures/make_figs.py`; the per-round logs are not shipped.

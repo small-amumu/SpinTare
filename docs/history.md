@@ -12,7 +12,7 @@ Earlier versions and side lines stay in the authors' archive and are summarised 
 | vLLM: static-mean import hook -> exact add-back in the Triton kernel | both shipped | the add-back covers models without a key bias (Qwen3) and the sink rows |
 | FlashAttention key-bias debias (v6b -> v6d) | not shipped | bias-only (k_proj) path; superseded by the calibrated-mean add-back, which also covers learned offsets |
 | Earlier add-back tree (mu3) and its timing run OV1 | not shipped | superseded; the OV2 scripts still name it as a reference arm |
-| Predictor candidates (mean bits, worst layer, top-k energy, attention KL, key MSE, the bias rule of vLLM #63081, cosine) | `b_top2` chosen by nested leave-one-family-out | ablations Z1-Z9 in `analysis/spintare/z_analyses.py` |
+| Predictor candidates (mean bits, worst layer, top-k energy, attention KL, key MSE, the bias rule of vLLM #63081, cosine) | `b_top2` chosen by nested leave-one-family-out | ablations Z1-Z9 in `experiments/analysis/spintare/z_analyses.py` |
 | Learned K rotation (krot) and its research llama.cpp tree | not shipped | a side line. The original probes used that tree only for `gguf-py`, which its patch does not touch |
 | Jetson Xavier tensor-core decode kernel | not shipped | a side line |
 | Comparisons with turboQuantDC kvcheck, KIVI simulations, the vLLM per-token-head census, the Qwen3.5 set | not shipped | side comparisons. The running-mean baseline of the same comparison line is shipped (`long_context_lc1/t2_runmean.py`) |

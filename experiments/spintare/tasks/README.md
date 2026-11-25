@@ -28,17 +28,17 @@ with the same seeds.
 
 Inputs:
 - mean files: `MU` from `../calib_and_diag/mu_calib.py` (llama.cpp, KVMU) or `python -m spintare_vllm
-  calib-mu` (vLLM, KVMR), both on the first 2048 tokens of `data/long_text.txt`; `PM` from `python -m
+  calib-mu` (vLLM, KVMR), both on the first 2048 tokens of `experiments/data/long_text.txt`; `PM` from `python -m
   spintare calib` (KVPM, llama.cpp postmean tree) or `../calib_and_diag/pm_calib.py` (KVMU, vLLM hook);
 - SmoothAttention checkpoints: `../smoothattention/`;
 - RULER data: NVIDIA RULER `scripts/data/prepare.py` (commit c3f5e3b, 50 samples, seed 42,
   `--model_template_type base`) per model tokenizer at length 32768;
-- LongBench: `scripts/get_longbench.sh "$KVREL_WORK/data/data"`; reasoning data: GSM8K (main, test parquet)
+- LongBench: `experiments/scripts/get_longbench.sh "$KVREL_WORK/data/data"`; reasoning data: GSM8K (main, test parquet)
   and MATH-500 under `$KVREL_WORK/reason/` (or `KVT_REASON_ROOT`).
 
 Paired intervals: `../calib_and_diag/paired_ci.py` (one bootstrap index shared by the tasks) and
 `../calib_and_diag/reason_ci.py`. The per-item records of the reasoning cells are shipped in
-`results/spintare/reasoning_r1/`; the figure scripts read them.
+`experiments/results/spintare/reasoning_r1/`; the figure scripts read them.
 
 Other clients here: `lc_lb_ho.py` (held-out models, `trust_remote_code`), `lc_probe.py` (needle probe
 baseline), `lc_reason_vllm.py`, `lc_lb_vllm.py`, `me_sim.py` (simulated attention KL baseline).

@@ -27,13 +27,13 @@ The patch touches `vllm/v1/attention/backends/triton_attn.py`, `ops/triton_unifi
 ## Use
 
 ```bash
-python -m spintare_vllm calib-mu $MODEL data/long_text.txt qwen25_7b.kvmr --T 2048   # pre-RoPE mean
+python -m spintare_vllm calib-mu $MODEL experiments/data/long_text.txt qwen25_7b.kvmr --T 2048   # pre-RoPE mean
 SPINTARE_KVMU=qwen25_7b.kvmr SPINTARE_GATE=1 vllm serve $MODEL \
     --attention-backend SPINTARE_AB --kv-cache-dtype int4_per_token_head --enforce-eager
-python -m spintare_vllm check --model $MODEL --text data/long_text.txt --no-postmean  # check
-python -m spintare_vllm kld --model $MODEL --text data/long_text.txt --kv auto --refdir ref \
+python -m spintare_vllm check --model $MODEL --text experiments/data/long_text.txt --no-postmean  # check
+python -m spintare_vllm kld --model $MODEL --text experiments/data/long_text.txt --kv auto --refdir ref \
     --out ref.json --ref                                    # 16-bit reference
-python -m spintare_vllm kld --model $MODEL --text data/long_text.txt --kv int4_per_token_head \
+python -m spintare_vllm kld --model $MODEL --text experiments/data/long_text.txt --kv int4_per_token_head \
     --refdir ref --out d.json                               # KL against it
 ```
 

@@ -7,10 +7,10 @@
 # k4v8, k4v8mu_kqpos, k4v8mu_gate (all on the mu6 build with the SG1 patch). GPU state and foreign processes are logged
 # before and after each bench; a bench with a foreign process is rerun once.
 # usage: setsid nohup bash sg2_time.sh > /dev/null 2>&1 < /dev/null &
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -u
 W=${KVREL_WORK}/ov2; O1=${KVREL_WORK}/ov1; D=$O1/gguf; F=$O1/files
-# B6: the SpinTare tree (scripts/build_llama_cpp.sh)
+# B6: the SpinTare tree (experiments/scripts/build_llama_cpp.sh)
 B6=${KVREL_LLAMA_CPP}/build/bin; GPU=0
 R=$W/sg2_time; mkdir -p "$R"; LOG=$W/sg2_time.log
 exec 8>"$W/sg2_time.lock"; flock -n 8 || exit 3

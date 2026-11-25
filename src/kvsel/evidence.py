@@ -3,7 +3,7 @@
 """Evidence constants for the KV-cache selector.
 
 Every number here comes from an existing measurement (SpinTare runs in results/spintare/) or from
-the patch sources in patches/. The SOURCE dict names the file each value was read from; rules that
+the patch sources in integrations/patches/. The SOURCE dict names the file each value was read from; rules that
 have no measurement behind them are marked TO_TEST in select.py and carry no constant here.
 """
 
@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 # ---------------------------------------------------------------- locations of the reused code
-SPINTARE_REPO = Path(__file__).resolve().parents[1]  # repository root
+SPINTARE_REPO = Path(__file__).resolve().parents[2]  # repository root
 CONFIG_CHECK_PY = SPINTARE_REPO / "experiments" / "spintare" / "detection_gate" / "config_check.py"
 KVPROBE_PY = SPINTARE_REPO / "experiments" / "spintare" / "detection_gate" / "kvprobe_unified.py"
 
@@ -38,7 +38,7 @@ def pth_bpw(bits: int, head_dim: int, n_meta: int) -> float:
 
 
 # kernel coverage by (engine, repair): which HF model_type graphs a patch is wired into, and which
-# RoPE scaling types its decode path accepts. Read from the patch sources (patches/):
+# RoPE scaling types its decode path accepts. Read from the patch sources (integrations/patches/):
 #   llama.cpp spintare-rotary-addback-exemption-gate.patch touches
 #     src/models/{gptneox,qwen2,qwen3}.cpp;
 #     its gated decode asserts the kqpos / kadd path, and kqpos is switched off by YaRN-style
@@ -59,7 +59,7 @@ KERNEL_MODEL_TYPES: dict[tuple[str, str], frozenset[str] | None] = {
     # graph; the patched
     # qwen2vl graph (M-RoPE) was never run, so it is left out.
     ("llama.cpp", "postmean"): frozenset({"llama", "mistral", "qwen2", "qwen3"}),
-    # = calib_mu.NEOX_TYPES (tests/kvsel checks that the two agree)
+    # = calib_mu.NEOX_TYPES (src/tests/kvsel checks that the two agree)
     ("vllm", "spintare"): frozenset({"llama", "mistral", "qwen2", "qwen3"}),
 }
 # RoPE scaling types (HF rope_scaling / rope_parameters "rope_type") each add-back kernel handles;
@@ -76,7 +76,7 @@ KERNEL_ROPE_TYPES: dict[tuple[str, str], frozenset[str | None]] = {
 # decode cost of the repairs (llama.cpp RTX 5090 D, batch 1; vLLM RTX PRO 5000 throughput ratio vs
 # stock). llama.cpp: the configuration kvsel selects (position add-back + exemption gate, K q4_0,
 # V q8_0) is the k4v8mu_gate arm of the SG2 timing run, decode time vs no add-back; min / max over
-# Qwen2.5-7B and Qwen3-1.7B at depth 0 / 8192 / 32768 (tests/kvsel checks it against the file).
+# Qwen2.5-7B and Qwen3-1.7B at depth 0 / 8192 / 32768 (src/tests/kvsel checks it against the file).
 COST = {
     "llamacpp_spintare_decode": (0.0557, 0.1438),  # +5.6 % .. +14.4 % per token
     "vllm_int4_addback_tput": 0.877,
@@ -89,10 +89,10 @@ LLAMACPP_COST_TIMED_GRAPHS = frozenset({"qwen2", "qwen3"})
 
 SOURCE = {
     "tau_b": "experiments/spintare/detection_gate/config_check.py (frozen)",
-    "TAU_ALLOW": "spintare/check/check.py",
-    "FLAT_BPW": "spintare/check/check.py BPW; serving policy in analysis/kvsel/offline_check.py",
-    "KERNEL_*": "patches/llama.cpp/*.patch (diff headers, kv-mu.h asserts); "
+    "TAU_ALLOW": "src/spintare/check/check.py",
+    "FLAT_BPW": "src/spintare/check/check.py BPW; serving policy in experiments/analysis/kvsel/offline_check.py",
+    "KERNEL_*": "integrations/patches/llama.cpp/*.patch (diff headers, kv-mu.h asserts); "
                 "integrations/vllm/src/spintare_vllm/calib_mu.py (NEOX_TYPES, refusals)",
-    "COST": "results/spintare/decode_overhead/res_sg2_time_agg.json (k4v8mu_gate), "
-            "results/spintare/vllm_figure/vpd_analysis.txt",
+    "COST": "experiments/results/spintare/decode_overhead/res_sg2_time_agg.json (k4v8mu_gate), "
+            "experiments/results/spintare/vllm_figure/vpd_analysis.txt",
 }

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+work/
+*.gguf
+*.safetensors
+*.bin
+*.kvmu
+*.kvpm
+*.kvmr
+*.log
+.DS_Store
+# frozen result files are part of the repository
+!results/**

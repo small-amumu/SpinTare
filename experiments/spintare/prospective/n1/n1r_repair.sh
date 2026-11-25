@@ -18,7 +18,7 @@
 # the FAILED removals and the overrides are applied together under run_n1_probe.sh's lock (review r48b M-2), so no
 # probe pass sees a GGUF with an old list entry. Writes only ${KVREL_WORK}/n1/, ${KVREL_GGUF}/n1r_* and n1_<tag> of the
 # two repaired models, and ${KVREL_WORK}/pmx/add_bos_override/<tag>.
-. "$(cd "$(dirname "$0")/../../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -uo pipefail
 W=${KVREL_WORK}; X=$W/n1; C=$X/code; B=${KVREL_LLAMA_CPP_BASE}/build/bin; CONV=${KVREL_LLAMA_CPP_BASE}
 PY=${KVREL_PYTHON}; G=${KVREL_GGUF}; TXT=$W/data/diag_text.txt; LOG=$X/run.log; OV=$W/pmx/add_bos_override

@@ -4,7 +4,7 @@
 # Build the llama.cpp engine trees used by the experiments: upstream llama.cpp at 3bb63cb, optionally with one of the
 # patches in patches/llama.cpp/.
 #
-#   scripts/build_llama_cpp.sh [target] [cuda_arch]
+#   experiments/scripts/build_llama_cpp.sh [target] [cuda_arch]
 #     target     spintare (default)  SpinTare repair: rotary add-back + exemption gate   -> $KVREL_LLAMA_CPP
 #                base                upstream 3bb63cb, unpatched (engine labels)     -> $KVREL_LLAMA_CPP_BASE
 #                postmean            static post-RoPE mean (LLAMA_KV_POSTMEAN): the static-centring baseline
@@ -30,7 +30,7 @@ build_one() {  # build_one <target>
   esac
   local pf=""
   if [ -n "$patch" ]; then
-    pf="$KVREL_ROOT/patches/llama.cpp/$patch.patch"
+    pf="$KVREL_ROOT/integrations/patches/llama.cpp/$patch.patch"
     [ -f "$pf" ] || { echo "no patch $pf" >&2; exit 2; }
   fi
   if [ ! -e "$dir" ]; then

@@ -16,7 +16,7 @@
 #                    add-back and the exemption gate (needs vLLM 5cb0fd265 with
 #                    patches/vllm/spintare-addback.patch and `pip install -e integrations/vllm`)
 #   name   model label; results go to $KVREL_WORK/results/{lc_vllm,ruler_vllm}/<name>/
-# environment (after scripts/env.sh):
+# environment (after experiments/scripts/env.sh):
 #   HF     Hugging Face model directory;  MU: KVMR file for spintare (python -m spintare_vllm
 #          calib-mu <HF> data/long_text.txt <out.kvmr> --T 2048);  PM: KVMU mean file for pm
 #   MML    max_model_len for RULER (32768 for Qwen2.5-7B, 33792 for Qwen3-1.7B in the reported runs)
@@ -36,7 +36,7 @@ set -euo pipefail
 [ $# -eq 3 ] || { sed -n 2,33p "$0"; exit 2; }
 BENCH=$1; ARM=$2; NAME=$3
 HERE=$(cd "$(dirname "$0")" && pwd)
-. "$HERE/../../../scripts/env.sh"
+. "$HERE/../../scripts/env.sh"
 : "${HF:?set HF}"
 PORT=${PORT:-8120}; GPU=${GPU:-0}; PY=${VLLM_PYTHON:-$KVREL_PYTHON}
 NH=${SPINTARE_NO_HADACORE:-1}

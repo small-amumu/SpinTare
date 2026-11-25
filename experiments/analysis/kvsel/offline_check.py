@@ -6,7 +6,7 @@ A. SpinTare cells (llama.cpp K formats, LongBench labels): fitting set (60 natur
    (PRED-P 20 + N13 12 usable cells), the blind batch N1 and the injected-dose batch N4. The flat
    decision of kvsel for a cell is "flag" iff b_top2 <= tau_b in the cell's engine basis.
    Loaders and
-   filters are SpinTare's analysis/spintare/z_analyses.py (definitions executed unchanged, as in
+   filters are SpinTare's experiments/analysis/spintare/z_analyses.py (definitions executed unchanged, as in
    the tokenizer re-check of the census). Also: wrong-basis sensitivity and the serving policy
    (flag -> 8-bit fallback) on the PRED-P cells.
 B. Whole-selector scenarios on every probed model (descriptive).
@@ -24,13 +24,13 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
-sys.path.insert(0, str(REPO))
+REPO = HERE.parents[1]  # experiments/
+sys.path.insert(0, str(HERE.parents[2] / "src"))
 from kvsel import evidence as ev  # noqa: E402
 from kvsel.metrics import ModelMetrics, config_check, from_probe  # noqa: E402
 from kvsel.select import Deployment, Engine, select  # noqa: E402
 
-RES = ev.SPINTARE_REPO / "results" / "spintare"
+RES = ev.SPINTARE_REPO / "experiments" / "results" / "spintare"
 INPUTS = REPO / "results" / "kvsel" / "inputs"  # HF configs of the probed models
 FK = {"q4_0": "hadamard/q4_0", "q4_0norot": "identity/q4_0", "q4_1": "hadamard/q4_1"}
 WRONG = {"q4_0": "identity/q4_0", "q4_0norot": "hadamard/q4_0", "q4_1": "identity/q4_1"}
@@ -38,8 +38,8 @@ WRONG = {"q4_0": "identity/q4_0", "q4_0norot": "hadamard/q4_0", "q4_1": "identit
 
 def z_defs() -> dict[str, Any]:
     """Execute the definition part of z_analyses.py (loaders, fit_bits, lofo, topk_energy)."""
-    os.environ["KVREL_RESULTS"] = str(ev.SPINTARE_REPO / "results")
-    src_path = ev.SPINTARE_REPO / "analysis" / "spintare" / "z_analyses.py"
+    os.environ["KVREL_RESULTS"] = str(ev.SPINTARE_REPO / "experiments" / "results")
+    src_path = ev.SPINTARE_REPO / "experiments" / "analysis" / "spintare" / "z_analyses.py"
     src = src_path.read_text(encoding="utf-8")
     hit = re.search(r'print\(\s*"# Final-round', src)  # the call is split over lines in the repo
     if hit is None:

@@ -15,7 +15,7 @@
 #            exactly (qwen2 arch only)
 # The f16 reference (KL base) comes from $KVREL_LLAMA_CPP with every switch off.
 # usage: e2b_run.sh <gpu 0|1|0,1> <model tag> <native max ctx> "<lengths>" <arch qwen2|other> [pm file] [mu file]
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"
 set -u
 unset LLAMA_KV_POSTMEAN LLAMA_KV_DEBIAS LLAMA_KV_DEBIAS_MU LLAMA_KV_DEBIAS_MU_PATH LLAMA_KV_DEBIAS_PATH \
       LLAMA_KV_DEBIAS_PAIRS LLAMA_KV_MU_GATE LLAMA_ATTN_ROT_DISABLE

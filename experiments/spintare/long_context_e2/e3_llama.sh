@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Zijie Hu
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 HERE=$(cd "$(dirname "$0")" && pwd); . "$HERE/common.sh"
 export LD_LIBRARY_PATH=$KVREL_LD_PATH
 sed -n "/^e3()/,/^}/p" $HERE/e3_gpu1.sh > $KB/e3fn.sh

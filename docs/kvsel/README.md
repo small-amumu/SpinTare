@@ -38,11 +38,11 @@ kernels then need `--model-type` and `--rope-type` (`none` = no scaling).
 | F6 | fallback: 8-bit K (llama.cpp), bf16 (vLLM) |
 | F7 | V stays q8_0 on the llama.cpp flat path |
 | F8 | vLLM INT4 / FP8 decisions use the q4_0 cell as a proxy (no fitted threshold for 128-wide blocks) |
-| F9 | decode / throughput cost of the repair is reported with the configuration (llama.cpp: add-back + gate, `results/spintare/decode_overhead/res_sg2_time_agg.json`) |
+| F9 | decode / throughput cost of the repair is reported with the configuration (llama.cpp: add-back + gate, `experiments/results/spintare/decode_overhead/res_sg2_time_agg.json`) |
 | C1 | the safe configuration with the fewest GPU bytes that fits the budget |
 | C6 | partial / interleaved RoPE and NoPE layers: the add-back formula holds with the model's own RoPE (X5), but no kernel implements it |
 | C12 | engine coordinates come from the engine build, not from the user |
-| C13 | add-back / static-mean coverage per (engine, model graph, RoPE scaling); see `kvsel/evidence.py` `KERNEL_*` |
+| C13 | add-back / static-mean coverage per (engine, model graph, RoPE scaling); see `src/kvsel/evidence.py` `KERNEL_*` |
 
 Kernel coverage (C13), read from the patch sources:
 
@@ -55,14 +55,14 @@ Kernel coverage (C13), read from the patch sources:
 ## Offline check
 
 ```bash
-python analysis/kvsel/offline_check.py        # CPU only; writes results/kvsel/offline_check/
-pytest -q tests/kvsel
+python experiments/analysis/kvsel/offline_check.py        # CPU only; writes experiments/results/kvsel/offline_check/
+pytest -q src/tests/kvsel
 ```
 
 It re-scores the selector's flat decision on the census cells with the frozen `tau_b` (fitting set:
 in-sample BA 0.983, leave-one-family-out 0.967; held-out PRED-P 20 and N13 12 cells all correct; serving
 policy with 8-bit fallback: mean task difference -0.68 at 6.00 bits) and prints the selector's choice
-for every probed model under three deployments. Input: `results/kvsel/inputs/model_configs.json` (the
+for every probed model under three deployments. Input: `experiments/results/kvsel/inputs/model_configs.json` (the
 models' `config.json`, `_name_or_path` removed).
 
 ## X5: add-back on partial / interleaved RoPE and NoPE layers
@@ -74,10 +74,10 @@ add-back computed from the model's own RoPE, gated centring lowered the `q4_0` a
 layer of every model (median ratio to plain `q4_0`: GLM 0.33, Phi 0.41, SmolLM3 RoPE layers 0.29 / NoPE
 layers 0.90, Qwen2.5 0.37). An add-back that gets one RoPE factor wrong (rotary width, pair layout,
 attention scaling, rotating mu on a NoPE layer) was about 3x to more than 1000x worse than no repair.
-Results: `results/kvsel/x5/` (model paths shown as `<models>/...`).
+Results: `experiments/results/kvsel/x5/` (model paths shown as `<models>/...`).
 
 The committed `x5_addback_check.py` and `x5_run.sh` are the files of the run (md5 `a046e836...` and
-`a27c6394...`, recorded in `results/kvsel/x5/run.log` and in each result's `script_md5`) plus the
+`a27c6394...`, recorded in `experiments/results/kvsel/x5/run.log` and in each result's `script_md5`) plus the
 repository's two license header lines; `x5_addback_check.py` also has one docstring word changed. In the
-repository `ggml_ref.py` re-exports `spintare/ggml_ref.py`, which is byte-identical to the copy the run
+repository `ggml_ref.py` re-exports `src/spintare/ggml_ref.py`, which is byte-identical to the copy the run
 imported.

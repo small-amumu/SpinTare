@@ -9,7 +9,7 @@
 # q4_0 with LLAMA_ATTN_ROT_DISABLE=1, q8_0; V q8_0, -fa on, -b 2048. chunks = 32768 / L (each chunk scores its second
 # half, so every L <= 32768 scores 16384 tokens); L > 32768 -> one chunk. Text: $E2A_TXT (default pg19_text.txt).
 # Writes only $KVREL_WORK/runs/e2a/<tag>/. KL base files are deleted after each length.
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"
 set -u
 g=$1; tag=$2; nat=$3; LENS=${4:-"2048 8192 32768"}; CHILD=
 trap '[ -n "$CHILD" ] && kill -TERM $CHILD 2>/dev/null; exit 143' TERM INT

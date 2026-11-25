@@ -27,9 +27,9 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# ggml primitives come from the library (spintare/ggml_ref.py); KVREL_ROOT (scripts/env.sh) or the
+# ggml primitives come from the library (spintare/ggml_ref.py); KVREL_ROOT (experiments/scripts/env.sh) or the
 # repository root of this file locates it, also for copies staged under $KVREL_WORK
-sys.path.insert(0, os.environ.get("KVREL_ROOT") or str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(Path(os.environ.get("KVREL_ROOT") or Path(__file__).resolve().parents[3]) / "src"))
 from spintare.ggml_ref import hadamard, n_rot_k, q4_0_div  # noqa: E402
 
 C_LEN, T_LEN, NQ = 1024, 1024, 256

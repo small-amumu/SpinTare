@@ -3,7 +3,7 @@
 # Copyright 2026 Zijie Hu
 # KL inside / beyond the calibration window, CH4X A7: teacher-forced KL against F16 K / F16 V inside (positions 1024-2047) and
 # beyond (4096-8191) the 2K calibration window; -ub 2 decode graphs, V q8_0, PDL off, -c CTX --chunks NCH.
-# <bin final>: SpinTare tree; <bin pm>: postmean tree (scripts/build_llama_cpp.sh); <mu>: KVMU pre-RoPE mean;
+# <bin final>: SpinTare tree; <bin pm>: postmean tree (experiments/scripts/build_llama_cpp.sh); <mu>: KVMU pre-RoPE mean;
 # <m>: static mean for LLAMA_KV_POSTMEAN; <text>: data/long_text + qasper_text + mfqa_text joined by blank
 # lines; <lock...>: one or more lock files held while the GPU is used. The switch values are passed
 # unquoted to env, so the mean-file paths must not contain spaces.

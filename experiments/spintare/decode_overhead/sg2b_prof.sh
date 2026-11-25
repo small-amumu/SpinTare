@@ -5,7 +5,7 @@
 # protocol of OV2: per decode step = (t[tg 288] - t[tg 32]) / 256 per kernel; plus the CUDA API summary (graph
 # launches vs kernel launches). Arms kqpos and kqpos + gate, Qwen3-1.7B and Qwen2.5-7B, K4V4, depth 0 and 32768.
 # Output: sg2b_prof/<model>_<arm>_d<depth>_n<tg>_{cuda_gpu_kern_sum,cuda_api_sum}.csv, log sg2b_prof/prof.log
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -u
 W=${KVREL_WORK}/ov2; O1=${KVREL_WORK}/ov1; D=$O1/gguf; F=$O1/files
 B=$W/src/llama.cpp-mu6/build/bin; P=$W/sg2b_prof; NSYS=/usr/local/cuda/bin/nsys

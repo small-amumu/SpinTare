@@ -6,7 +6,7 @@
 # One RTX 5090 D; the card lock is held for the whole queue, so the queue starts when the timing
 # run (OV1) has released it. One model at a time; a failed model is logged and the queue goes on.
 # usage: setsid nohup bash run_lc1.sh > /dev/null 2>&1 < /dev/null &
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -u
 W=${KVREL_WORK}/lc1; M=${KVREL_MODELS}; DATA=${KVREL_DATA}; GPU=0
 mkdir -p "$W/res" "$W/logs"; LOG=$W/logs/lc1_all.log

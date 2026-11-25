@@ -11,7 +11,7 @@ Source of every number in the vLLM figure, measured on 2026-11-23 on one RTX PRO
 | `pr59674_applied.diff` | PR #59674 (vLLM, key-bias handling for INT4 caches) as applied to 5cb0fd265d |
 | `test_vpd_analyze.py` | synthetic test of the analyzer (one passing tree, nine broken ones) |
 
-Frozen output: `results/spintare/vllm_figure/` (per-run JSON files with paths replaced, `vpd_result.json`,
+Frozen output: `experiments/results/spintare/vllm_figure/` (per-run JSON files with paths replaced, `vpd_result.json`,
 `vpd_analysis.txt`). Controls, all passed:
 - every KL arm present and finite; add-back arms built;
 - on Llama-3.1-8B (no key bias) the PR arm equals stock INT4 exactly;

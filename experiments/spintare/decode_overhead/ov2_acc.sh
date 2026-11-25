@@ -10,10 +10,10 @@
 # Text: long_text + qasper_text + mfqa_text of data/, joined by blank lines (g3_text.txt).
 # Base logits are written to ${KVREL_WORK}/ov2/kl (deleted at the end of each model and context).
 # usage: setsid nohup bash ov2_acc.sh > /dev/null 2>&1 < /dev/null &
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -u
 W=${KVREL_WORK}/ov2; O1=${KVREL_WORK}/ov1; D=$O1/gguf; F=$O1/files
-# B6: the SpinTare tree (scripts/build_llama_cpp.sh)
+# B6: the SpinTare tree (experiments/scripts/build_llama_cpp.sh)
 B6=${KVREL_LLAMA_CPP}/build/bin; B3=$O1/src/llama.cpp-mu3/build/bin; GPU=0
 R=$W/acc; K=$W/kl; mkdir -p "$R" "$K"; LOG=$W/acc.log; TXT=$W/files/g3_text.txt
 exec 8>"$W/acc.lock"; flock -n 8 || exit 3

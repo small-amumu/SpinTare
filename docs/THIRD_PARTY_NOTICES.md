@@ -1,33 +1,33 @@
 # Third-party notices
 
-SpinTare's own code is licensed under Apache-2.0 (see LICENSE and NOTICE). The following parts reproduce or follow
+SpinTare's own code is licensed under Apache-2.0 (see LICENSE and docs/NOTICE). The following parts reproduce or follow
 third-party work:
 
 - **LongBench** (THUDM/LongBench, MIT License; the dataset is now hosted as zai-org/LongBench): the prompt templates, middle truncation and the answer
-  normalisation / F1 / retrieval metrics in `spintare/tasks/longbench.py` are reproduced from the repository's `pred.py`
+  normalisation / F1 / retrieval metrics in `src/spintare/tasks/longbench.py` are reproduced from the repository's `pred.py`
   and `metrics.py` (with the scoring, truncation and chat-template deviations listed at the top of that file). The LongBench task files (questions and answers) are not redistributed;
-  `scripts/get_longbench.sh` downloads them from the original source, under the dataset's own terms. The
-  texts in `data/` (except the PG19 ones) are concatenated LongBench contexts, included with attribution
-  for calibration and evaluation only (`data/README.md`).
-- **llama.cpp** (ggml-org/llama.cpp, MIT License): `spintare/sim.py` (used by `spintare/baselines/probe.py`)
+  `experiments/scripts/get_longbench.sh` downloads them from the original source, under the dataset's own terms. The
+  texts in `experiments/data/` (except the PG19 ones) are concatenated LongBench contexts, included with attribution
+  for calibration and evaluation only (`experiments/data/README.md`).
+- **llama.cpp** (ggml-org/llama.cpp, MIT License): `src/spintare/sim.py` (used by `src/spintare/baselines/probe.py`)
   independently re-implements ggml's reference quantisation rules (q4_0, q4_1, q8_0) and the upstream K rotation
   size rule;
-  `spintare/fix/permute.py` re-implements the q/k channel permutation of the GGUF converter. No llama.cpp source
+  `src/spintare/fix/permute.py` re-implements the q/k channel permutation of the GGUF converter. No llama.cpp source
   is copied into these files.
-  `patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` and `postmean-static-mean.patch` apply to
+  `integrations/patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` and `postmean-static-mean.patch` apply to
   llama.cpp commit 3bb63cb and contain unchanged context lines from it: MIT License, Copyright (c) 2023-2026 The
-  ggml authors; full text in `patches/llama.cpp/LICENSE-llama.cpp.txt`. The SpinTare changes in the patches are
+  ggml authors; full text in `integrations/patches/llama.cpp/LICENSE-llama.cpp.txt`. The SpinTare changes in the patches are
   Apache-2.0. The patched upstream files remain under the MIT License.
 - **vLLM** (vllm-project/vllm, Apache-2.0, Copyright the vLLM project contributors):
-  `patches/vllm/spintare-addback.patch` modifies `vllm/v1/attention/backends/triton_attn.py`,
+  `integrations/patches/vllm/spintare-addback.patch` modifies `vllm/v1/attention/backends/triton_attn.py`,
   `vllm/v1/attention/ops/triton_unified_attention.py` and `vllm/v1/attention/ops/int4_per_token_head.py` of commit
   5cb0fd265 (Apache-2.0); `integrations/vllm/` subclasses vLLM's Triton attention backend and
   `experiments/spintare/tasks/vllm_site/kv_postmean.py` copies the attention `forward` of vLLM's Qwen2 / Qwen3
   models with one added line (Apache-2.0).
   `experiments/spintare/detection_gate/kvprobe_pth.py` re-states the randomized Hadamard transform and the INT4
   rounding of `int4_per_token_head.py` in PyTorch.
-  `spintare/baselines/attn_kl_vllm.py` re-states the `int4_per_token_head` KV format of
-  `vllm/v1/attention/ops/int4_per_token_head.py` (commit 0c16eee3) in PyTorch for an offline simulation, and `spintare/baselines/probe.py` / `spintare/baselines/rules.py` implement the
+  `src/spintare/baselines/attn_kl_vllm.py` re-states the `int4_per_token_head` KV format of
+  `vllm/v1/attention/ops/int4_per_token_head.py` (commit 0c16eee3) in PyTorch for an offline simulation, and `src/spintare/baselines/probe.py` / `src/spintare/baselines/rules.py` implement the
   key-bias warning rule of vLLM PR #63081, as baselines.
 
 The MIT License text applies to the reproduced LongBench prompts and metrics:

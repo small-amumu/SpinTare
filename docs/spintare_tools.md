@@ -1,13 +1,13 @@
 # SpinTare tools
 
-> **Note:** the `calib` / postmean repair below is the static-mean variant (the static-mean baseline), kept as a tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back plus the exemption gate, in `patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` / `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
+> **Note:** the `calib` / postmean repair below is the static-mean variant (the static-mean baseline), kept as a tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back plus the exemption gate, in `integrations/patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` / `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
 
 
 Tools to check, before deployment, whether a low-bit K cache (llama.cpp `q4_0`, `q4_1`, `q8_0`) damages a
 model without any error, to measure where the damage comes from, and to apply the static-mean repair.
 
-The engine tools (`check`, `restore-engine`) need llama.cpp built with `patches/llama.cpp/postmean-static-mean.patch`
-(`scripts/build_llama_cpp.sh postmean`; `restore-engine` also runs on the SpinTare tree). Postmean
+The engine tools (`check`, `restore-engine`) need llama.cpp built with `integrations/patches/llama.cpp/postmean-static-mean.patch`
+(`experiments/scripts/build_llama_cpp.sh postmean`; `restore-engine` also runs on the SpinTare tree). Postmean
 reads a KVPM file through `LLAMA_KV_POSTMEAN`; the patch hooks it into the qwen2, qwen3, llama and qwen2vl
 graphs only, and other architectures ignore it (the check notices this: a D that does not change under postmean
 is reported as "patch did not run"). Postmean does not support context shifting.
@@ -43,13 +43,13 @@ All simulated quantisers except `attn-kl-vllm` (vLLM's format) follow ggml's ref
 order and basis, which includes the upstream llama.cpp K rotation (turn it off with `LLAMA_ATTN_ROT_DISABLE=1`).
 The simulation quantises K only and keeps V exact, while the engine check runs with a `q8_0` V cache in both the
 reference and the test; simulated D is therefore close to, but not the same number as, the engine D on which the
-check's thresholds are defined. See `spintare/sim.py`.
+check's thresholds are defined. See `src/spintare/sim.py`.
 
 ## Baselines
 
 | Command | What it does |
 |---|---|
-| `probe` | One 16-bit forward pass that computes every baseline feature: measured effective bits per block, key reconstruction error, simulated attention KL, attention-output cosine, and the key-bias statistic of vLLM PR #63081. Its quantisers are those of `spintare/sim.py` (ggml's rules, fp16 block scales). |
+| `probe` | One 16-bit forward pass that computes every baseline feature: measured effective bits per block, key reconstruction error, simulated attention KL, attention-output cosine, and the key-bias statistic of vLLM PR #63081. Its quantisers are those of `src/spintare/sim.py` (ggml's rules, fp16 block scales). |
 | `rules` | The baseline decision rules on those features: vLLM PR #63081, the offset-ratio rule, the mlx-quant-fidelity KL band, a SageAttention-style cosine check, and fitted thresholds for the remaining features. |
 | `attn-kl-vllm` | Simulated attention KL for vLLM's `int4_per_token_head` format (the llama.cpp formats are covered by `probe`). |
 
@@ -57,7 +57,7 @@ check's thresholds are defined. See `spintare/sim.py`.
 
 | Command | What it does |
 |---|---|
-| `longbench` | LongBench subtasks through `llama-server`, following the LongBench prompts, truncation and metrics, with greedy decoding. The deviations from the official evaluation (first-line scoring for the three multi-hop QA tasks, truncation within the server context, the built-in Llama 3.1 template) are listed at the top of `spintare/tasks/longbench.py`; they apply to both runs of a comparison, so the paired difference is much less affected than the absolute scores. Get the data with `scripts/get_longbench.sh` (pinned dataset revision, sha256-checked; set `HF_ENDPOINT` for a mirror). |
+| `longbench` | LongBench subtasks through `llama-server`, following the LongBench prompts, truncation and metrics, with greedy decoding. The deviations from the official evaluation (first-line scoring for the three multi-hop QA tasks, truncation within the server context, the built-in Llama 3.1 template) are listed at the top of `src/spintare/tasks/longbench.py`; they apply to both runs of a comparison, so the paired difference is much less affected than the absolute scores. Get the data with `experiments/scripts/get_longbench.sh` (pinned dataset revision, sha256-checked; set `HF_ENDPOINT` for a mirror). |
 | `paired-ci` | Paired bootstrap interval of the score difference against the 16-bit cache, paired by question id and resampled within each task (stratified), and the verdict: collapse (drop of 20 points or more, relative drop of 50% or more, or a repetition-loop rate of 20% or more), lossless (interval lower bound within the 3-point margin), partial drop (interval upper bound below the margin), or undecided. |
 
 ## Thresholds

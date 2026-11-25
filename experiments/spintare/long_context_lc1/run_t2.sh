@@ -7,7 +7,7 @@
 #   python t2_runmean.py agg $KVREL_WORK/t2/res --logs $KVREL_WORK/t2/logs
 #          --lc1-res $KVREL_WORK/lc1/res --lc1-dir <this directory>
 # usage: bash run_t2.sh [gpu]
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); GPU=${1:-0}
 W=$KVREL_WORK/t2; mkdir -p "$W/res" "$W/logs"

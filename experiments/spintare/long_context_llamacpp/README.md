@@ -12,10 +12,10 @@ add-back; 1.9-4.6x by 32K on Qwen3-0.6B and Qwen2.5-7B, against 0.84-1.03x; on L
 | `run_all.sh` | the full grid, in the order of the original LSF jobs |
 | `e2_analyze.py` | scores the registered predictions P1-P4 + activation check from the `run.log` files |
 
-Frozen results: `results/spintare/long_context_llamacpp/`
+Frozen results: `experiments/results/spintare/long_context_llamacpp/`
 - `e2_final.json`, `run_logs/e2{a,b}/<tag>/run.log`: the RTX PRO 5000 run. It ran the `run_all.sh` lines of the
   four table models (R1-Distill-Qwen-7B, Qwen2.5-7B, Qwen3-0.6B, Llama-3.1-8B) with these scripts unchanged, on
-  the SpinTare and postmean trees (`scripts/build_llama_cpp.sh`, the CMake options of the research tree below),
+  the SpinTare and postmean trees (`experiments/scripts/build_llama_cpp.sh`, the CMake options of the research tree below),
   TF32 off (`GGML_CUDA_CUBLAS_NO_TF32=1`).
 - `control_vst3.json`: its control. The 41 cells measured earlier on the same card (2026-11-16) reproduce
   exactly (identical printed D).
@@ -35,7 +35,7 @@ gives the content of `e2_final.json` (and `v100_replication/run_logs` that of
 
 Setup: K q4_0 with the engine's Hadamard rotation, V q8_0, `-fa on -b 2048`, q8_0 weight GGUFs, f16 K reference
 per length, `32768 / L` chunks (16384 scored tokens) up to 32K and one chunk beyond. 64K / 128K use `pg19_long` =
-`data/pg19_text.txt` + `data/pg19_text2.txt` (md5 0a55cfc4; `run_all.sh` builds it), whose first part is the 32K
+`experiments/data/pg19_text.txt` + `experiments/data/pg19_text2.txt` (md5 0a55cfc4; `run_all.sh` builds it), whose first part is the 32K
 text, so the long points are a single block of the same PG19 text family. `pm` runs on the postmean tree (the
 KVMU mean file is converted to the KVPM header at run time), the other cells on the SpinTare tree (switches off =
 upstream), with `LLAMA_KV_DEBIAS_MU_PATH=kadd` for `abmu`.

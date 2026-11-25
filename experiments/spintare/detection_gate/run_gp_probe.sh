@@ -11,7 +11,7 @@
 #   cpu models: only after the PM-X chain logs A1_CHAIN_DONE (its CPU side needs the RAM), bf16 on CPU, 32 threads,
 #   after MemAvailable >= 3 GB per B + 16 GB.
 # Writes only ${KVREL_WORK}/gatepred/. One FAILED line per failed model; never touches another process.
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -uo pipefail
 W=${KVREL_WORK}; X=$W/gatepred; C=$X/code; PY=${KVREL_PYTHON}; LT=${KVREL_LLAMA_CPP_KROT}
 GG=${KVREL_GGUF}; PMX=$W/pmx/results; T=$W/data/long_text.txt; CAP=21600

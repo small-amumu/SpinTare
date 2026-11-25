@@ -28,7 +28,7 @@ import numpy as np
 import torch
 
 QK = 32
-# libggml-base of a llama.cpp build (scripts/build_llama_cpp.sh); only its reference quantizers are
+# libggml-base of a llama.cpp build (experiments/scripts/build_llama_cpp.sh); only its reference quantizers are
 # called
 LIB_DEFAULT = os.environ.get(
     "KVREL_GGML_LIB",

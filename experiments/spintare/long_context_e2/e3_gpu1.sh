@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Zijie Hu
 # E3 on one RTX PRO 5000 (GPU1, placement amendment): the same cells and settings as the E3 part of e23_run.sh.
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 HERE=$(cd "$(dirname "$0")" && pwd); . "$HERE/common.sh"
 export LD_LIBRARY_PATH=$KVREL_LD_PATH
 export VLLM_ATTENTION_BACKEND=TRITON_ATTN

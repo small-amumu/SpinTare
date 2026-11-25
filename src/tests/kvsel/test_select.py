@@ -125,7 +125,7 @@ def test_llamacpp_decode_cost_matches_timing_file() -> None:
     import json
 
     from kvsel import evidence as ev
-    f = ev.SPINTARE_REPO / "results" / "spintare" / "decode_overhead" / "res_sg2_time_agg.json"
+    f = ev.SPINTARE_REPO / "experiments" / "results" / "spintare" / "decode_overhead" / "res_sg2_time_agg.json"
     d = json.loads(f.read_text(encoding="utf-8"))
     assert len(d["models"]) == 2  # the F9 reason text says "2 models"
     v = [x for m in d["models"].values() for x in m["overhead_pct"]["k4v8mu_gate"].values()]

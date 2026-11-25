@@ -13,13 +13,13 @@
 #          spintare  q4_0 K, rotary centring with exact add-back + exemption gate
 #          nogate    q4_0 K, rotary centring with exact add-back, exemption gate off
 #   name   model label; results go to $KVREL_WORK/results/{lc,ruler}/<name>/ or $KVREL_WORK/reason/
-# environment (after scripts/env.sh):
+# environment (after experiments/scripts/env.sh):
 #   GGUF   q8_0 GGUF of the model (the tree's convert_hf_to_gguf.py --outtype q8_0)
 #   HF     Hugging Face model directory (tokenizer and chat template for the client)
 #   MU     pre-RoPE mean file for spintare / nogate (../calib_and_diag/mu_calib.py)
 #   PM     static post-RoPE mean file for pm (python -m spintare calib, 2048 tokens)
 #   PORT   server port (default 8090); GPU: CUDA device in PCI bus order (default 0)
-#   data   LongBench: $KVREL_WORK/data/data/<task>.jsonl (scripts/get_longbench.sh);
+#   data   LongBench: $KVREL_WORK/data/data/<task>.jsonl (experiments/scripts/get_longbench.sh);
 #          RULER_DATA: RULER prepare.py output for this tokenizer,
 #          <root>/32768/<task>/validation.jsonl;
 #          reasoning: KVT_REASON_ROOT (default $KVREL_WORK/reason) with gsm8k/main/test-*.parquet
@@ -37,7 +37,7 @@ set -euo pipefail
 [ $# -eq 3 ] || { sed -n 2,33p "$0"; exit 2; }
 BENCH=$1; ARM=$2; NAME=$3
 HERE=$(cd "$(dirname "$0")" && pwd)
-. "$HERE/../../../scripts/env.sh"
+. "$HERE/../../scripts/env.sh"
 : "${GGUF:?set GGUF}"; : "${HF:?set HF}"
 PORT=${PORT:-8090}; GPU=${GPU:-0}
 BIN=$KVREL_LLAMA_CPP/build/bin; KT=q4_0; SW=()

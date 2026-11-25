@@ -6,7 +6,7 @@
 
 [![python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](docs/setup.md)
 [![pytorch](https://img.shields.io/badge/pytorch-2.3%2B-EE4C2C?logo=pytorch&logoColor=white)](docs/setup.md)
-[![llama.cpp](https://img.shields.io/badge/llama.cpp-3bb63cb-6f42c1)](patches/llama.cpp)
+[![llama.cpp](https://img.shields.io/badge/llama.cpp-3bb63cb-6f42c1)](integrations/patches/llama.cpp)
 [![vLLM](https://img.shields.io/badge/vLLM-5cb0fd265-30A2FF)](integrations/vllm)
 [![license](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![status](https://img.shields.io/badge/status-research%20code-orange)](docs/history.md)
@@ -45,13 +45,13 @@ format whether to centre at all. The repair keeps the engine's per-token block l
 | Collapse | 12 of 28 released models collapse under llama.cpp `q4_0`; 16 stay nearly lossless | `experiments/spintare/detection_gate/` |
 | Long context | at 32K (teacher forcing, `q4_0` without rotation), a 2K static mean leaves **2.6-366x** the output KL of SpinTare on the five models that need centring, and trails by up to 32.0 points on downstream tasks | `experiments/spintare/long_context_lc1/`, `experiments/spintare/tasks/` |
 | Retrieval | RULER 32K, Qwen2.5-7B: no repair **0.00**, SpinTare **82.90** in llama.cpp (16-bit 82.78) and **80.90** in vLLM INT4 (16-bit 82.97); SmoothAttention stays at 0 | `experiments/spintare/tasks/` |
-| Reasoning | R1-Distill-Qwen-7B, GSM8K: no repair **0.0%**, static mean 77.5%, SpinTare **93.5%** (16-bit 94.0%); MATH-500: 0.0% / 52.8% / **84.8%** (16-bit 83.2%) | `experiments/spintare/tasks/`, `results/spintare/reasoning_r1/` |
-| Memory | SpinTare matches 16-bit accuracy with **1.9x** (GSM8K) and **1.8x** (MATH-500) less KV memory per generation | `results/spintare/reasoning_r1/` |
-| Configuration check | threshold `tau_b = 2.028` fitted on 29 models / 60 cells: leave-one-family-out balanced accuracy **0.967**; all **32 held-out cells** (12 models) correct | `experiments/spintare/prospective/`, `analysis/spintare/z_analyses.py` |
+| Reasoning | R1-Distill-Qwen-7B, GSM8K: no repair **0.0%**, static mean 77.5%, SpinTare **93.5%** (16-bit 94.0%); MATH-500: 0.0% / 52.8% / **84.8%** (16-bit 83.2%) | `experiments/spintare/tasks/`, `experiments/results/spintare/reasoning_r1/` |
+| Memory | SpinTare matches 16-bit accuracy with **1.9x** (GSM8K) and **1.8x** (MATH-500) less KV memory per generation | `experiments/results/spintare/reasoning_r1/` |
+| Configuration check | threshold `tau_b = 2.028` fitted on 29 models / 60 cells: leave-one-family-out balanced accuracy **0.967**; all **32 held-out cells** (12 models) correct | `experiments/spintare/prospective/`, `experiments/analysis/spintare/z_analyses.py` |
 
 Costs, measured on one RTX 5090 D at batch 1: rotary add-back slows decoding by 2.8-11.2%, the exemption
 gate by a further 1.4-4.2 points (together 5.6-14.4% with K `q4_0` / V `q8_0`;
-`results/spintare/decode_overhead/res_ov2_time_agg.json`, `res_sg2_time_agg.json`), and its F32 row
+`experiments/results/spintare/decode_overhead/res_ov2_time_agg.json`, `res_sg2_time_agg.json`), and its F32 row
 flags add 5.6% to the K memory
 (`experiments/spintare/decode_overhead/`).
 
@@ -81,13 +81,13 @@ flags add 5.6% to the K memory
 
 | Part | Path |
 |---|---|
-| llama.cpp patch: rotary add-back (computed from positions inside the flash-attention kernel) + exemption gate (fused write kernels, F32 row flags) | [`patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch`](patches/llama.cpp) |
-| llama.cpp patch: static post-RoPE mean (the static-mean baseline) | `patches/llama.cpp/postmean-static-mean.patch` |
-| vLLM: Triton add-back patch + plugin (`SPINTARE_AB` backend, `calib-mu`, check, KL pass) | [`patches/vllm/`](patches/vllm), [`integrations/vllm/`](integrations/vllm) |
-| Python package `spintare`: configuration check and engine check, mean files, layout tools, baselines | `spintare/` |
+| llama.cpp patch: rotary add-back (computed from positions inside the flash-attention kernel) + exemption gate (fused write kernels, F32 row flags) | [`integrations/patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch`](integrations/patches/llama.cpp) |
+| llama.cpp patch: static post-RoPE mean (the static-mean baseline) | `integrations/patches/llama.cpp/postmean-static-mean.patch` |
+| vLLM: Triton add-back patch + plugin (`SPINTARE_AB` backend, `calib-mu`, check, KL pass) | [`integrations/patches/vllm/`](integrations/patches/vllm), [`integrations/vllm/`](integrations/vllm) |
+| Python package `spintare`: configuration check and engine check, mean files, layout tools, baselines | `src/spintare/` |
 | One folder per study: probes and model sets, task runners, simulations, decode timing | `experiments/spintare/` |
-| Frozen results behind the tables and figures, re-derived on a CPU (coverage in [docs/reproduction.md](docs/reproduction.md)) | `results/spintare/`, `analysis/spintare/` |
-| `kvsel`: probe -> KV-cache configuration selector (K format, repair, fallback per engine), its offline check and the X5 add-back check ([docs/kvsel/README.md](docs/kvsel/README.md)) | `kvsel/`, `analysis/kvsel/`, `experiments/kvsel/`, `results/kvsel/` |
+| Frozen results behind the tables and figures, re-derived on a CPU (coverage in [docs/reproduction.md](docs/reproduction.md)) | `experiments/results/spintare/`, `experiments/analysis/spintare/` |
+| `kvsel`: probe -> KV-cache configuration selector (K format, repair, fallback per engine), its offline check and the X5 add-back check ([docs/kvsel/README.md](docs/kvsel/README.md)) | `src/kvsel/`, `experiments/analysis/kvsel/`, `experiments/kvsel/`, `experiments/results/kvsel/` |
 
 ## Install
 
@@ -96,33 +96,33 @@ git clone <this repository> spintare && cd spintare
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[test,layout,figures]"
 pytest -q tests                                   # CPU unit tests
-scripts/build_llama_cpp.sh all 120                # llama.cpp 3bb63cb: SpinTare, upstream, postmean trees
+experiments/scripts/build_llama_cpp.sh all 120                # llama.cpp 3bb63cb: SpinTare, upstream, postmean trees
 ```
 
-vLLM: check out commit `5cb0fd265`, `git apply patches/vllm/spintare-addback.patch`, install it, then
+vLLM: check out commit `5cb0fd265`, `git apply integrations/patches/vllm/spintare-addback.patch`, install it, then
 `pip install -e integrations/vllm` ([details](integrations/vllm/README.md)). All paths come from
-[`scripts/env.sh`](scripts/env.sh) (defaults under `work/`); see [docs/setup.md](docs/setup.md).
+[`experiments/scripts/env.sh`](experiments/scripts/env.sh) (defaults under `work/`); see [docs/setup.md](docs/setup.md).
 
 ## Quick start
 
 ```bash
-. scripts/env.sh
+. experiments/scripts/env.sh
 M=$KVREL_MODELS/Qwen2.5-7B-Instruct
 # 1. configuration check: one 16-bit pass in the engine's coordinates, then b_top2 per K format
 python experiments/spintare/detection_gate/kvprobe_unified.py --model $M --order hf \
-    --out probe.json --text data/long_text.txt
+    --out probe.json --text experiments/data/long_text.txt
 python experiments/spintare/detection_gate/config_check.py probe.json --formats hadamard/q4_0
 #   hadamard/q4_0      b_top2  0.2001  tau_b 2.028  -> centre  (worst layers [0, 27])
 # 2. pre-RoPE mean on the first 2048 tokens, then serve with the repair
-python experiments/spintare/calib_and_diag/mu_calib.py $M data/long_text.txt qwen25_7b.kvmu --T 2048
+python experiments/spintare/calib_and_diag/mu_calib.py $M experiments/data/long_text.txt qwen25_7b.kvmu --T 2048
 LLAMA_KV_DEBIAS_MU=qwen25_7b.kvmu LLAMA_KV_DEBIAS_MU_PATH=kqpos LLAMA_KV_MU_GATE=1 \
     $KVREL_LLAMA_CPP/build/bin/llama-server -m qwen25_7b-q8_0.gguf -fa on -ctk q4_0 -ctv q8_0
 # 3. engine check of the formats (output KL against the 16-bit cache)
-python -m spintare check $KVREL_LLAMA_CPP_PM/build/bin qwen25_7b-q8_0.gguf data/long_text.txt
+python -m spintare check $KVREL_LLAMA_CPP_PM/build/bin qwen25_7b-q8_0.gguf experiments/data/long_text.txt
 ```
 
 Llama-family GGUFs permute q / k channels: probe with `--order gguf` and reorder mean files with
-`python -m spintare permute`. In vLLM: `python -m spintare_vllm calib-mu $M data/long_text.txt m.kvmr`,
+`python -m spintare permute`. In vLLM: `python -m spintare_vllm calib-mu $M experiments/data/long_text.txt m.kvmr`,
 then `SPINTARE_KVMU=m.kvmr vllm serve $M --attention-backend SPINTARE_AB --kv-cache-dtype
 int4_per_token_head`; `detection_gate/kvprobe_pth.py` adds vLLM's INT4 block to the probe.
 
@@ -132,9 +132,9 @@ int4_per_token_head`; `detection_gate/kvprobe_pth.py` adds vLLM's INT4 block to 
 frozen result and the GPU. Everything that is an aggregate re-derives on a CPU:
 
 ```bash
-scripts/stage_results.sh
-python analysis/spintare/z_analyses.py            # tau_b = 2.028, LOFO BA 0.967, ablations
-FIG_OUT=work/figures python analysis/spintare/figures/make_eval_tables.py
+experiments/scripts/stage_results.sh
+python experiments/analysis/spintare/z_analyses.py            # tau_b = 2.028, LOFO BA 0.967, ablations
+FIG_OUT=work/figures python experiments/analysis/spintare/figures/make_eval_tables.py
 ```
 
 The task tables run cell by cell, e.g. with `GGUF`, `HF`, `MU` and `RULER_DATA` set,
@@ -158,12 +158,12 @@ run that produced each number (fixed seeds, frozen thresholds, md5 records).
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE). The llama.cpp patches are derivative works of llama.cpp (MIT)
-and the vLLM patch of vLLM (Apache-2.0); see [NOTICE](NOTICE) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+and the vLLM patch of vLLM (Apache-2.0); see [docs/NOTICE](docs/NOTICE) and
+[docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
 
 ## Citation
 
-If you use this software, please cite the repository ([CITATION.cff](CITATION.cff)):
+If you use this software, please cite the repository ([docs/CITATION.cff](docs/CITATION.cff)):
 
 ```bibtex
 @software{spintare2026,
@@ -175,4 +175,4 @@ If you use this software, please cite the repository ([CITATION.cff](CITATION.cf
 }
 ```
 
-See also [CITATION.cff](CITATION.cff).
+See also [docs/CITATION.cff](docs/CITATION.cff).

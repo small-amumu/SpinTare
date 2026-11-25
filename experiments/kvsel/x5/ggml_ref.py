@@ -6,5 +6,5 @@ folder; in the repository this module re-exports the library one."""
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 from spintare.ggml_ref import gguf_perm, hadamard, n_rot_k, quant  # noqa: E402, F401

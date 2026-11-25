@@ -4,7 +4,7 @@
 # PM-X GGUF preparation (no measurement): fresh q8_0 conversions of the HF checkpoints by the llama.cpp-krot-llama
 # tree's convert_hf_to_gguf.py into ${KVREL_WORK}/pmllama/gguf/<tag>-q8_0.gguf, one log per tag (the runner requires its
 # "Model successfully exported" line). CPU only; skips a tag whose log already has that line.
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -uo pipefail
 P=${KVREL_WORK}/pmllama/gguf; LT=${KVREL_LLAMA_CPP_KROT}; PY=${KVREL_PYTHON}
 mkdir -p "$P"

@@ -6,10 +6,10 @@
 # 32 chunks: kqpos with the gate unset (E2), gate=1 with -ub 2 (E1 decode) and with the default ubatch (E1 prefill).
 # Compared with the SG1 logs by sg2_agg.py. Base logits in ${KVREL_WORK}/ov2/kl, deleted after each model.
 # usage: setsid nohup bash sg2_acc.sh > /dev/null 2>&1 < /dev/null &
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 set -u
 W=${KVREL_WORK}/ov2; O1=${KVREL_WORK}/ov1; D=$O1/gguf; F=$O1/files
-# B6: the SpinTare tree (scripts/build_llama_cpp.sh)
+# B6: the SpinTare tree (experiments/scripts/build_llama_cpp.sh)
 B6=${KVREL_LLAMA_CPP}/build/bin; GPU=0
 R=$W/sg2_acc; K=$W/kl; mkdir -p "$R" "$K"; LOG=$W/sg2_acc.log; TXT=$W/files/g3_text.txt
 exec 8>"$W/sg2_acc.lock"; flock -n 8 || exit 3

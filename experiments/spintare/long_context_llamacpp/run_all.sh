@@ -3,10 +3,10 @@
 # Copyright 2026 Zijie Hu
 # The full E2 grid (registry X-0081 / X-0085 / X-0086 and its two amendments), in the order the original
 # LSF jobs ran on one node (2 x V100-16GB; e2a*.lsf, e2b*.lsf). GPUs 0 and 1; lengths > 32768 use both.
-# Needs: scripts/build_llama_cpp.sh spintare and postmean; q8_0 weight GGUFs in $KVREL_GGUF named as below
-# (scripts/convert_gguf.sh, then llama-quantize ... q8_0); mean files in $KVREL_RESULTS/spintare/long_context_llamacpp/kvmu.
+# Needs: experiments/scripts/build_llama_cpp.sh spintare and postmean; q8_0 weight GGUFs in $KVREL_GGUF named as below
+# (experiments/scripts/convert_gguf.sh, then llama-quantize ... q8_0); mean files in $KVREL_RESULTS/spintare/long_context_llamacpp/kvmu.
 # Afterwards: python e2_analyze.py $KVREL_WORK/runs --json e2_final.json (compare with the shipped e2_final.json).
-. "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"
+. "$(cd "$(dirname "$0")/../.." && pwd)/scripts/env.sh"
 HERE=$(cd "$(dirname "$0")" && pwd)
 A=$HERE/e2a_run.sh; B=$HERE/e2b_run.sh; K=$KVREL_RESULTS/spintare/long_context_llamacpp/kvmu
 LONG=$KVREL_DATA/pg19_long.txt

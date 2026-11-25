@@ -4,7 +4,7 @@ SmoothAttention (QServe) scales the pre-RoPE keys by `lambda = max_t |K| ** 0.5`
 channel (RoPE pairs tied) and folds `1 / lambda` into the key projection and `lambda` into the query
 projection, so the model computes the same scores while the cached keys are smaller. Qwen3 normalises q and
 k with one weight vector shared by all heads, so there `lambda` is one vector per layer (maximum over KV
-heads). Calibration: the first 2048 tokens of `data/long_text.txt`, 16-bit forward.
+heads). Calibration: the first 2048 tokens of `experiments/data/long_text.txt`, 16-bit forward.
 
 | File | Role |
 |---|---|
@@ -12,7 +12,7 @@ heads). Calibration: the first 2048 tokens of `data/long_text.txt`, 16-bit forwa
 | `sa_apply.py` | re-create a folded checkpoint from a recorded `lambda` file and check that every output shard has the recorded md5 |
 | `gguf_diff.py` | compare an original GGUF with the GGUF of its folded checkpoint tensor by tensor (only the q / k tensors may differ) |
 
-`results/spintare/smoothattention/` holds the four recorded `lambda` files (Qwen2.5-7B-Instruct,
+`experiments/results/spintare/smoothattention/` holds the four recorded `lambda` files (Qwen2.5-7B-Instruct,
 Qwen3-0.6B, Qwen3-1.7B, DeepSeek-R1-Distill-Qwen-7B) and their fold records. The released `lambda` files
 drop the run machine's model path, so their file md5 differs from `lambda_md5` in the record;
 `sa_apply.py` checks `lambda_tensor_md5` (the md5 of the tensor) instead.
