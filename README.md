@@ -42,16 +42,16 @@ format whether to centre at all. The repair keeps the engine's per-token block l
 
 | | Result | Where |
 |---|---|---|
-| Collapse | 12 of 28 released models collapse under llama.cpp `q4_0`; 16 stay nearly lossless | census, `experiments/spintare/detection_gate/` |
-| Long context | at 32K (teacher forcing, `q4_0` without rotation), a 2K static mean leaves **2.6-366x** the output KL of SpinTare on the five models that need centring, and trails by up to 32.0 points on downstream tasks | `fig:teaser`, `tab:kl32`, Table 2 |
-| Retrieval | RULER 32K, Qwen2.5-7B: no repair **0.00**, SpinTare **82.90** in llama.cpp (16-bit 82.78) and **80.90** in vLLM INT4 (16-bit 82.97); SmoothAttention stays at 0 | Table 2 (b), (c) |
-| Reasoning | R1-Distill-Qwen-7B, GSM8K: no repair **0.0%**, static mean 77.5%, SpinTare **93.5%** (16-bit 94.0%); MATH-500: 0.0% / 52.8% / **84.8%** (16-bit 83.2%) | Table 2 |
-| Memory | SpinTare matches 16-bit accuracy with **1.9x** (GSM8K) and **1.8x** (MATH-500) less KV memory per generation | `fig:pareto` |
-| Configuration check | threshold `tau_b = 2.028` fitted on 29 models / 60 cells: leave-one-family-out balanced accuracy **0.967**; all **32 held-out cells** (12 models) correct | `tab:detection` |
+| Collapse | 12 of 28 released models collapse under llama.cpp `q4_0`; 16 stay nearly lossless | `experiments/spintare/detection_gate/` |
+| Long context | at 32K (teacher forcing, `q4_0` without rotation), a 2K static mean leaves **2.6-366x** the output KL of SpinTare on the five models that need centring, and trails by up to 32.0 points on downstream tasks | `experiments/spintare/long_context_lc1/`, `experiments/spintare/tasks/` |
+| Retrieval | RULER 32K, Qwen2.5-7B: no repair **0.00**, SpinTare **82.90** in llama.cpp (16-bit 82.78) and **80.90** in vLLM INT4 (16-bit 82.97); SmoothAttention stays at 0 | `experiments/spintare/tasks/` |
+| Reasoning | R1-Distill-Qwen-7B, GSM8K: no repair **0.0%**, static mean 77.5%, SpinTare **93.5%** (16-bit 94.0%); MATH-500: 0.0% / 52.8% / **84.8%** (16-bit 83.2%) | `experiments/spintare/tasks/`, `results/spintare/reasoning_r1/` |
+| Memory | SpinTare matches 16-bit accuracy with **1.9x** (GSM8K) and **1.8x** (MATH-500) less KV memory per generation | `results/spintare/reasoning_r1/` |
+| Configuration check | threshold `tau_b = 2.028` fitted on 29 models / 60 cells: leave-one-family-out balanced accuracy **0.967**; all **32 held-out cells** (12 models) correct | `experiments/spintare/prospective/`, `analysis/spintare/z_analyses.py` |
 
 Costs, measured on one RTX 5090 D at batch 1: rotary add-back slows decoding by 2.8-11.2%, the exemption
-gate by a further 1.4-4.2 points, and its F32 row flags add 5.6% to the K memory (see Limitations in the
-paper and `fig:app_decode`).
+gate by a further 1.4-4.2 points, and its F32 row flags add 5.6% to the K memory
+(`experiments/spintare/decode_overhead/`).
 
 <table>
   <tr>
@@ -123,9 +123,9 @@ Llama-family GGUFs permute q / k channels: probe with `--order gguf` and reorder
 then `SPINTARE_KVMU=m.kvmr vllm serve $M --attention-backend SPINTARE_AB --kv-cache-dtype
 int4_per_token_head`; `detection_gate/kvprobe_pth.py` adds vLLM's INT4 block to the probe.
 
-## Reproducing the paper
+## Reproducing the results
 
-[docs/reproduction.md](docs/reproduction.md) maps every table and figure to the script that ran it, its
+[docs/reproduction.md](docs/reproduction.md) maps every result and figure to the script that ran it, its
 frozen result and the GPU. Everything that is an aggregate re-derives on a CPU:
 
 ```bash
@@ -140,7 +140,7 @@ The task tables run cell by cell, e.g. with `GGUF`, `HF`, `MU` and `RULER_DATA` 
 qwen25_7b` (vLLM); `DRY_RUN=1` prints the server and client commands of a cell.
 
 The engine task tables and the decode-cost measurements ran on an NVIDIA RTX 5090 D and an RTX PRO
-5000; the GPU of every table and figure is listed in [docs/reproduction.md](docs/reproduction.md) and
+5000; the GPU of every result is listed in [docs/reproduction.md](docs/reproduction.md) and
 the experiment READMEs.
 
 ## Scope and limitations
@@ -159,12 +159,15 @@ and the vLLM patch of vLLM (Apache-2.0); see [NOTICE](NOTICE) and
 
 ## Citation
 
+If you use this software, please cite the repository ([CITATION.cff](CITATION.cff)):
+
 ```bibtex
-@misc{spintare2026,
-  title  = {SpinTare: Efficient Detection and Mitigation of Offset-Induced K-Cache Collapse},
-  author = {{The SpinTare Authors}},
-  year   = {2026},
-  note   = {Under review}
+@software{spintare2026,
+  title   = {SpinTare: detection and mitigation of offset-induced K-cache collapse},
+  author  = {{The SpinTare Authors}},
+  year    = {2026},
+  version = {0.1.0},
+  url     = {https://github.com/small-amumu/SpinTare}
 }
 ```
 

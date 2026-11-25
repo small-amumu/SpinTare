@@ -1,4 +1,4 @@
-"""Chapter-5 data figures and tables for SpinTare, recomputed from stored results only (no new
+"""Evaluation data figures and tables for SpinTare, recomputed from stored results only (no new
 runs).
 
 Outputs (next to this script): fig5_*.pdf/png, tab5_*.md, ch5_numbers.json.
@@ -31,7 +31,7 @@ E2 = json.loads((RES / "long_context_llamacpp" / "e2_final.json").read_text(enco
 T1 = json.loads((RES / "detection_gate" / "res_t1_score.json").read_text(encoding="utf-8"))
 GP = json.loads((RES / "detection_gate" / "gp_score.json").read_text(encoding="utf-8"))
 PROS = RES / "prospective"
-R1 = RES / "reasoning_r1"  # per-item records of the R1-Distill-Qwen-7B reasoning cells (Table 2)
+R1 = RES / "reasoning_r1"  # per-item records of the R1-Distill-Qwen-7B reasoning cells
 
 mpl.rcParams.update(
     {

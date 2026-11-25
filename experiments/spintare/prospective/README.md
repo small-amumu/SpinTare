@@ -10,7 +10,7 @@ between runs. The copies that each set carried on its run machine were byte-iden
 | `predp/run_pp_probe.sh` | every set: set `X=$KVREL_WORK/<set>` and the model list | - |
 | `n1/n1_rules.py` | N1 (blind, `SELECT_N = 9`) and N4 (injected; its `n4_rules.py` was identical) | `bc830dc9` |
 
-| Set | Paper name | Rules | Models |
+| Set | Name | Rules | Models |
 |---|---|---|---|
 | `predp` | prospective | `pp_rules.py`, amendment `pp_amend_score.py` | `models_pp*.txt` |
 | `n1` | blind | `n1_rules.py`; GGUF repairs of the blind candidates: `n1r_convert.py`, `n1r_repair.sh` | `models_n1*.txt` |

@@ -1,4 +1,4 @@
-"""Single-column versions (3.0 in wide, included unscaled, text >= 6 pt) for the ACL draft,
+"""Single-column versions (3.0 in wide, included unscaled, text >= 6 pt),
 2026-11-13.
 
 fig_layer_bits_col   : panel (a) of fig_layer_bits (collapsing vs nearly lossless, relative depth).

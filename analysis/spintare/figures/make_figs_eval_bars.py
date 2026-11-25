@@ -1,9 +1,9 @@
-"""Evaluation bar figures for the SpinTare paper in the style of VecInfer (ACL 2026, Figs. 6-8):
+"""Evaluation bar figures for SpinTare in the style of VecInfer (ACL 2026, Figs. 6-8):
 Times, grouped bars with thin black edges, hatching per method, dashed grid behind, framed legend on
-top, green arrows with bold rotated gain labels. Colours keep this paper's earlier convention where
+top, green arrows with bold rotated gain labels. Colours keep SpinTare's earlier convention where
 it applies (amber = before / no repair, teal = after / SpinTare); 16-bit is the pale reference bar.
 
-Only fig_eval_vllm (appendix fig:vllm) is a paper figure. It reads the frozen report of the vLLM
+fig_eval_vllm (the vLLM figure) reads the frozen report of the vLLM
 run on one RTX PRO 5000 (results/spintare/vllm_figure/vpd_result.json, run script in
 experiments/spintare/vllm_figure).
 Usage: python make_figs_eval_bars.py  -> fig_eval_vllm.pdf / .png (printed size).

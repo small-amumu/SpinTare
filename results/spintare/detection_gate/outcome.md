@@ -36,7 +36,7 @@
   change 3.3%), inj32 changes diffuse_head_frac by +13.3% (a count over heads); labels go lossless -> damaged (base 0,
   inj3 partial, inj4 ... inj32 collapse). M4 fails (has_k_bias AUC 0.871 >= 0.8).
 - readings as fixed: G2' fails -> the single-forward effective-bit predictor does not replace the engine check; the
-  check stays the gate. MECH-D: M1 fails -> both properties carry information and the paper does not claim the offset
+  check stays the gate. MECH-D: M1 fails -> both properties carry information and SpinTare does not claim the offset
   explanation predicts better; M2 holds -> no layer-mean attention statistic separates the failing models (AUC <=
   0.72); M3 holds for doses up to 16x and fails at 32x on one coarse feature, so "an approximately softmax-invisible
   offset reproduces the failure" is stated for doses up to inj16 only. Descriptive: the best weights-only and

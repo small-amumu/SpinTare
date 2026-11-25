@@ -1,5 +1,5 @@
 #!/bin/bash
-# One vLLM task cell of Table 2 (c) (RULER 32K) or tab:longbench (LongBench 8K): start
+# One vLLM task cell (RULER 32K or LongBench 8K): start
 # `vllm serve` for one K-cache arm, run the client, stop the server.
 #
 # usage: run_vllm_cell.sh <bench> <arm> <name>
@@ -17,7 +17,7 @@
 # environment (after scripts/env.sh):
 #   HF     Hugging Face model directory;  MU: KVMR file for spintare (python -m spintare_vllm
 #          calib-mu <HF> data/long_text.txt <out.kvmr> --T 2048);  PM: KVMU mean file for pm
-#   MML    max_model_len for RULER (32768 for Qwen2.5-7B, 33792 for Qwen3-1.7B in the paper)
+#   MML    max_model_len for RULER (32768 for Qwen2.5-7B, 33792 for Qwen3-1.7B in the reported runs)
 #   RULER_DATA, LongBench data: as run_llamacpp_cell.sh;  PORT (default 8120), GPU (default 0,
 #          PCI bus order)
 #   VLLM_PYTHON  interpreter of the vLLM install (default $KVREL_PYTHON)

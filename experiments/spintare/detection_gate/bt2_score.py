@@ -1,10 +1,10 @@
-"""Configuration check for the vLLM INT4 per-token-head cache: b_top2 and its decision (paper sec.
-4, eq. top2 / gate).
+"""Configuration check for the vLLM INT4 per-token-head cache: b_top2 and its decision (two worst
+layers, frozen tau_b).
 
 b_top2 = -log4(mean of the two largest 4^-b_l over layers), b_l = the probe's b_meas of the layer
 for the format; the format is flagged (refused as is, so centring is selected) iff b_top2 <= tau_b =
 2.0280476994784027 (frozen). Validation: the llama.cpp formats of the same pass (hadamard / identity
-x q4_0 / q4_1) are compared with the stored probe.json of the model (paper probe, same text / seq /
+x q4_0 / q4_1) are compared with the stored probe.json of the model (original probe, same text / seq /
 skip); the pass is valid if every |difference| <= 0.01. Prints one JSON line per model and exits 1
 if any validation fails. usage: python -I bt2_score.py <new probe.json> <stored probe.json> <model
 tag>

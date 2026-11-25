@@ -1,6 +1,6 @@
 #!/bin/bash
-# One llama.cpp task cell of Table 2 (tab:main) and of the gate ablations (tab:gate,
-# tab:gate_ruler): start llama-server for one K-cache arm, run the task client, stop the server.
+# One llama.cpp task cell of the main task results and of the gate ablations
+# (LongBench and RULER with / without the gate): start llama-server for one K-cache arm, run the task client, stop the server.
 #
 # usage: run_llamacpp_cell.sh <bench> <arm> <name>
 #   bench  longbench | ruler | gsm8k | math500
@@ -29,7 +29,7 @@
 # the other tasks 200. RULER: 32K, 4 tasks x 50 items, greedy. GSM8K items 0-199 and MATH-500 items
 # 0-499 (the registered MATH-500 cells ran as two ranges, 0-249 and 250-499): T 0.6, top-p 0.95,
 # seed 1000 + item, at most 8192 new tokens. GGML_CUDA_PDL=0 in every arm (with PDL on, 32K prefill
-# timed out on Blackwell; the four-task LongBench cells of Table 2 (a) ran with the default).
+# timed out on Blackwell; the four-task LongBench cells ran with the default).
 # Needs Linux (/proc, setsid-free process handling), bash >= 4.4 and curl.
 set -euo pipefail
 [ $# -eq 3 ] || { sed -n 2,33p "$0"; exit 2; }

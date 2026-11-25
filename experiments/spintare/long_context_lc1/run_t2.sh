@@ -1,7 +1,7 @@
 #!/bin/bash
 # Running-mean baseline (T2) in the LC1 harness at 32K: the twelve LC1 models, bfloat16 weights, one
-# GPU (RTX 5090 D in the paper), one model at a time. Feeds the "Run" columns of tab:kl32 and
-# tab:kl32_non_qwen. Aggregate afterwards with
+# GPU (RTX 5090 D in the reported run), one model at a time. Feeds the "Run" columns of the 32K
+# output-KL tables. Aggregate afterwards with
 #   python t2_runmean.py agg $KVREL_WORK/t2/res --logs $KVREL_WORK/t2/logs
 #          --lc1-res $KVREL_WORK/lc1/res --lc1-dir <this directory>
 # usage: bash run_t2.sh [gpu]

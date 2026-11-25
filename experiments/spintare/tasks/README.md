@@ -1,17 +1,17 @@
 # Task evaluation in the engines
 
-Clients and runners behind the task tables of the paper. Each runner starts one server for one K-cache
+Clients and runners behind the task results. Each runner starts one server for one K-cache
 arm, runs the client against it and stops the server; results land under `$KVREL_WORK/results/`.
 
-| Paper | Runner | Client | Engine build | GPU |
+| Result | Runner | Client | Engine build | GPU |
 |---|---|---|---|---|
-| Table 2 (a) LongBench 8K | `run_llamacpp_cell.sh longbench <arm> <name>` | `lc_lb.py` (+ `lb.py`) | SpinTare tree; `pm`: postmean tree | RTX 5090 D |
-| Table 2 (b) RULER 32K, `tab:gate_ruler` | `run_llamacpp_cell.sh ruler <arm> <name>` | `lc_ruler.py` | same | RTX 5090 D |
-| Table 2 (b) GSM8K, MATH-500; `tab:failure_causes`, Pareto figure | `run_llamacpp_cell.sh gsm8k\|math500 <arm> <name>` | `lc_reason.py` | same | RTX PRO 5000 |
-| `tab:gate` (top), KL inside / beyond the calibration window | `kl_by_context.sh` | `llama-perplexity` | SpinTare and postmean trees | RTX PRO 5000 |
-| `tab:gate` (bottom), LongBench with / without the gate | `run_llamacpp_cell.sh longbench spintare\|nogate <name>` | `lc_lb.py` | SpinTare tree | RTX 5090 D |
-| Table 2 (c) RULER 32K in vLLM | `run_vllm_cell.sh ruler <arm> <name>` | `lc_ruler_vllm.py` | vLLM 5cb0fd265 (+ add-back patch for `spintare`) | RTX PRO 5000 |
-| `tab:longbench` LongBench 8K in vLLM | `run_vllm_cell.sh longbench <arm> <name>` | `lc_lb_vllm.py` | same | RTX PRO 5000 |
+| LongBench 8K, llama.cpp | `run_llamacpp_cell.sh longbench <arm> <name>` | `lc_lb.py` (+ `lb.py`) | SpinTare tree; `pm`: postmean tree | RTX 5090 D |
+| RULER 32K, llama.cpp; with / without the gate | `run_llamacpp_cell.sh ruler <arm> <name>` | `lc_ruler.py` | same | RTX 5090 D |
+| GSM8K, MATH-500; failure causes, accuracy vs memory | `run_llamacpp_cell.sh gsm8k\|math500 <arm> <name>` | `lc_reason.py` | same | RTX PRO 5000 |
+| KL inside / beyond the calibration window | `kl_by_context.sh` | `llama-perplexity` | SpinTare and postmean trees | RTX PRO 5000 |
+| LongBench with / without the gate | `run_llamacpp_cell.sh longbench spintare\|nogate <name>` | `lc_lb.py` | SpinTare tree | RTX 5090 D |
+| RULER 32K, vLLM | `run_vllm_cell.sh ruler <arm> <name>` | `lc_ruler_vllm.py` | vLLM 5cb0fd265 (+ add-back patch for `spintare`) | RTX PRO 5000 |
+| LongBench 8K, vLLM | `run_vllm_cell.sh longbench <arm> <name>` | `lc_lb_vllm.py` | same | RTX PRO 5000 |
 
 Arms (llama.cpp): `f16`, `plain` (`q4_0`, no repair), `pm` (static post-RoPE mean), `sa` (SmoothAttention,
 folded GGUF), `spintare` (rotary centring with exact add-back and the exemption gate), `nogate` (the same

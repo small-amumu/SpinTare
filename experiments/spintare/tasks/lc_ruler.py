@@ -33,7 +33,7 @@ GEN = {
     "qa_1": 32,
     "niah_multikey_3": 128,
     "niah_multiquery": 128,
-}  # Table 2 tasks; RULER niah value length
+}  # the four reported tasks; RULER niah value length
 
 
 def string_match_all(pred: str, ref: list[str]) -> float:

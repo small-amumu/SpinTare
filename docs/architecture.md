@@ -42,4 +42,4 @@ Static post-RoPE mean (the baseline): `LLAMA_KV_POSTMEAN` in the postmean tree
 
 `experiments/spintare/<study>/` holds the scripts of one study; `results/spintare/<study>/` its frozen
 outputs; `analysis/spintare/` re-derives the tables and figures from `results/` on a CPU. The mapping from
-every table and figure of the paper to its scripts is in `docs/reproduction.md`.
+every result and figure to its scripts is in `docs/reproduction.md`.

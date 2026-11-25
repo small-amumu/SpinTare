@@ -1,6 +1,6 @@
 # LC1 registration: static mean-centring of post-RoPE keys at long context
 
-Written 2026-11-12 (UTC), before any LC1 output on real text exists. Paper-1 line (SpinTare, then called TareKV): the claim under test is one link of the
+Written 2026-11-12 (UTC), before any LC1 output on real text exists. SpinTare line (then called TareKV): the claim under test is one link of the
 storyline "mean-centring is treated as neutral; it is not".
 
 ## Question
@@ -23,7 +23,7 @@ mean; the question is open for longer contexts and for a calibration shorter tha
 `lc1_long.py` (new, self-contained): harness of `c27_kl.py` (one teacher-forced pass per arm, every layer's keys
 replaced, values exact) at L = 32768, with the key formats of `eg1_engine.reconstruct` (Q4_0 on 32-blocks, with
 and without the engine's Hadamard rotation, channel order per model as in the EG1 probes). bfloat16 weights,
-float32 attention; one RTX 5090 D; torch 2.13.0, transformers 5.18.0 (the versions of the other paper-1 runs),
+float32 attention; one RTX 5090 D; torch 2.13.0, transformers 5.18.0 (the versions of the other SpinTare runs),
 weights verified file by file against the copies those runs used.
 Texts: qasper and mfqa from token 0; each is the other's calibration text. Calibration statistics: pre-RoPE mean
 mu and post-RoPE mean over positions [0, 2048) (B2, D, E), post-RoPE mean over [0, L) (BL).
@@ -68,9 +68,9 @@ emulated formats (EG1: emulation and engine agree, Spearman 0.997, on 4-chunk 2K
 is ours (mean over a calibration window of another text), not a reimplementation of any published method's
 calibration; KL, not task scores.
 
-## Presentation rule for the paper (stated before the data)
+## Presentation rule (stated before the data)
 
-All models go into the appendix table. A main-text figure may show a subset chosen by a rule stated in the paper
+All models go into the full table. A summary figure may show a subset chosen by a rule stated in advance
 (e.g. the models that need centring and are in range); no result is dropped because of its direction.
 
 ## A1 (2026-11-12, after a code review, before any real-text output)

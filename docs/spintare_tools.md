@@ -1,6 +1,6 @@
 # SpinTare tools
 
-> **Note:** the `calib` / postmean repair below is the static-mean variant (the paper's static-mean baseline), kept as a tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back plus the exemption gate, in `patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` / `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
+> **Note:** the `calib` / postmean repair below is the static-mean variant (the static-mean baseline), kept as a tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back plus the exemption gate, in `patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` / `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
 
 
 Tools to check, before deployment, whether a low-bit K cache (llama.cpp `q4_0`, `q4_1`, `q8_0`) damages a

@@ -1,7 +1,7 @@
 # Decode overhead of the add-back and the exemption gate
 
 Drivers of the registered timing, accuracy and profiling runs on one RTX 5090 D (batch 1), behind
-`fig_decode_cost` (appendix) and the decode-cost numbers of the Limitations.
+`fig_decode_cost` and the reported decode-cost numbers.
 
 | File | Run | What |
 |---|---|---|

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The SpinTare Authors
-"""Configuration check of one model from its probe output (paper Sec. 4, Eq. top2).
+"""Configuration check of one model from its probe output (b_top2 of the two worst layers).
 
 b_l is the effective bits of layer l in one K format, b_meas of the probe (kvprobe_unified.py, or
 kvprobe_pth.py for vLLM's int4_per_token_head). b_top2 = -log4(mean of the two largest 4^-b_l over the

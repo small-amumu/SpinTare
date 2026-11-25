@@ -1,8 +1,7 @@
-"""Chapter-5 bar figures and LaTeX tables in the style of fig_eval_vllm (make_figs_eval_bars.py).
+"""Evaluation bar figures and LaTeX tables in the style of fig_eval_vllm (make_figs_eval_bars.py).
 
-User decision 2026-11-22: keep five figures (vLLM bars, gate heatmap, length-KL panels, position
-heatmap, Pareto); every other chapter-5 result is a numeric table or a bar chart in the vLLM-figure
-style. Data loading is reused from make_ch5_figs.py (same stored results, no new runs). Outputs:
+Five results are figures (vLLM bars, gate heatmap, length-KL panels, position heatmap, Pareto); every
+other evaluation result is a numeric table or a bar chart in the vLLM-figure style. Data loading is reused from make_ch5_figs.py (same stored results, no new runs). Outputs:
 fig5b_*.pdf/png, tab5_*.tex, tables_preview.tex.
 """
 
@@ -471,7 +470,7 @@ def tab_rho() -> str:
             rows.append("\\midrule")
     return table(
         "rho",
-        "Residual energy $\\rho(t)$ of the 2K static mean: prediction of \\cref{eq:rho} against "
+        "Residual energy $\\rho(t)$ of the 2K static mean: closed-form prediction against "
         "measurement, and the static-mean penalty at 32K.",
         "lrrrr",
         "Model & Spearman (pred., meas.) & Median $|\\log_{10}$ err.$|$ & Measured $\\rho$ at 32K & "
@@ -508,9 +507,9 @@ def tab_row() -> str:
 
 
 def tab_detection() -> str:
-    # raw set names of the T1 rescore; their mapping to the paper's fitting / prospective / blind /
-    # newly-released sets is not yet reconciled (paper: fitting BA 0.967 with 2 misses; T1: 0.983
-    # with 1)
+    # raw set names of the T1 rescore; their mapping to the fitting / prospective / blind /
+    # newly-released sets of z_analyses.py is not yet reconciled (z_analyses: LOFO BA 0.967 with 2
+    # misses; T1: 0.983 with 1)
     names = {"FIT": "FIT", "PRED-P": "PRED-P", "N13": "N13", "N1": "N1", "N4": "N4 (injected)"}
     rows = []
     for s in ["FIT", "PRED-P", "N13", "N1", "N4"]:
@@ -530,8 +529,8 @@ def tab_detection() -> str:
         rows,
         "T1 rescore (res\\_t1\\_score.json). N4 holds only damaged cells, so balanced accuracy is "
         "undefined. "
-        "The mapping to the paper's sets and the FIT difference (paper: 0.967, 2 misses) are not yet "
-        "reconciled.",
+        "The mapping to the z\\_analyses sets and the FIT difference (LOFO 0.967, 2 misses) are not "
+        "yet reconciled.",
     )
 
 
@@ -586,7 +585,7 @@ def tab_pareto() -> str:
     rows.pop()
     return table(
         "pareto_slopes",
-        "Accuracy gained per doubling of KV memory along the budget sweep of \\cref{fig:pareto}.",
+        "Accuracy gained per doubling of KV memory along the budget sweep of the Pareto figure.",
         "llrrrrr",
         "Task & K cache & 1K$\\to$2K & 2K$\\to$4K & 4K$\\to$8K & MiB at 8K & Acc.\\ at 8K",
         rows,
@@ -603,7 +602,7 @@ def tables_preview(parts: list[str]) -> None:
         + "\n\\end{document}\n"
     )
     (OUT / "tables_preview.tex").write_text(
-        doc.replace("\\cref{eq:rho}", "Eq.~(rho)").replace("\\cref{fig:pareto}", "Fig.~5.7"),
+        doc,
         encoding="utf-8",
     )
 

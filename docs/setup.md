@@ -9,7 +9,7 @@ pytest -q tests                              # CPU unit tests
 ```
 
 The vLLM experiments need vLLM at commit 5cb0fd265 with `patches/vllm/spintare-addback.patch` and the plugin
-in `integrations/vllm/` (see its README). The paper's runs used torch 2.13.0 and transformers 5.18.0.
+in `integrations/vllm/` (see its README). The reported runs used torch 2.13.0 and transformers 5.18.0.
 
 ## 2. Paths (`scripts/env.sh`)
 
@@ -47,7 +47,7 @@ did not create). Switches of the SpinTare tree, all read once at start-up:
 | Variable | Effect |
 |---|---|
 | `LLAMA_KV_DEBIAS_MU=<file>` | rotary centring with the pre-RoPE mean of a KVMU file (`experiments/spintare/calib_and_diag/mu_calib.py`) |
-| `LLAMA_KV_DEBIAS_MU_PATH=kqpos` | decode add-back computed from positions inside the flash-attention kernel (the paper's path; `kqbias` = table, `kadd` = rebuild K) |
+| `LLAMA_KV_DEBIAS_MU_PATH=kqpos` | decode add-back computed from positions inside the flash-attention kernel (the reported path; `kqbias` = table, `kadd` = rebuild K) |
 | `LLAMA_KV_MU_GATE=1` | exemption gate (needs `kqpos`; single KV stream) |
 
 With no switch the tree follows the upstream path. GGUF conversion:

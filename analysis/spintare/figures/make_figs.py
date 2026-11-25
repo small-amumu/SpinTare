@@ -1,4 +1,4 @@
-"""Paper data figures (ACL two-column width), read from the registered aggregate files only.
+"""Data figures (two-column width), read from the registered aggregate files only.
 
 fig_length_kl     : KL vs position, 5 collapsing models, arms none / static mean / rotary centring / + exemption gate (LC1, sim)
 fig_residual      : (a) left-over offset ratio of the static mean vs position, 12 models; (b) predicted vs measured (LC1)

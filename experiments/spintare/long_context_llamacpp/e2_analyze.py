@@ -1,4 +1,4 @@
-"""e2_analyze (v2): paper-1 E2, phases A (X-0081/X-0085) and B (X-0086).
+"""e2_analyze (v2): SpinTare E2, phases A (X-0081/X-0085) and B (X-0086).
 Reads runs/e2a/<tag>/run.log and runs/e2b/<tag>/run.log pulled from the run machine and judges the
 frozen X-0086 predictions on a fixed expected grid (missing data -> INCOMPLETE, never HOLDS/FAILS):
   P1 each collapsed model: the add-back cell with the lowest D at the model's registered longest

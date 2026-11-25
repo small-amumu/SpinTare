@@ -1,4 +1,4 @@
-"""Single-column fig_length_kl for the ACL draft (2026-11-13).
+"""Single-column fig_length_kl (2026-11-13).
 
 Same data and styling as make_figs.fig_length_kl, laid out 3 + 2 panels for one column (3.0 in wide,
 included unscaled, so text stays >= 6 pt); the legend fills the sixth grid slot.

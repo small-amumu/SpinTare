@@ -1,7 +1,7 @@
 # SpinTare for vLLM
 
 A vLLM general plugin (`spintare_vllm`) plus a patch to vLLM's Triton attention kernels. Base: vLLM commit
-`5cb0fd265d65a8ab9a39517ddb33a9996fe45398` (0.34.0rc1.dev468), the build of the paper's vLLM cells.
+`5cb0fd265d65a8ab9a39517ddb33a9996fe45398` (0.34.0rc1.dev468), the build of the reported vLLM cells.
 
 | Backend (`--attention-backend`) | Switch | What it does |
 |---|---|---|
@@ -37,7 +37,7 @@ python -m spintare_vllm kld --model $MODEL --text data/long_text.txt --kv int4_p
     --refdir ref --out d.json                               # KL against it
 ```
 
-The plugin registers itself through the `vllm.general_plugins` entry point. The paper's task cells start
+The plugin registers itself through the `vllm.general_plugins` entry point. The task cells start
 the server through `experiments/spintare/tasks/run_vllm_cell.sh`, which also sets the kernel variant of
 the registered runs (`SPINTARE_AB_WRITE=fused`, `SPINTARE_AB_VARIANT=1`).
 

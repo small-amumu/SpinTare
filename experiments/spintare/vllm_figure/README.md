@@ -1,6 +1,6 @@
-# vLLM figure (fig:vllm): accuracy, kernel time and throughput on one RTX PRO 5000
+# vLLM figure: accuracy, kernel time and throughput on one RTX PRO 5000
 
-Source of every number in the appendix figure `fig:vllm`, measured on 2026-11-23 on one RTX PRO 5000
+Source of every number in the vLLM figure, measured on 2026-11-23 on one RTX PRO 5000
 (vLLM main 5cb0fd265d, Triton attention backend).
 
 | File | Role |

@@ -5,7 +5,7 @@ computed from the position inside the flash-attention decode kernel (LLAMA_KV_DE
 LLAMA_KV_DEBIAS_MU_PATH=kqpos); prefill adds R(p) mu to the dequantized keys.
 Exemption gate (LLAMA_KV_MU_GATE=1): rows with z = 1 - k.mu / |mu|^2 >= 0.5 are cached uncentred and
 flagged (F32 flag per cell and KV head); fused write path GGML_OP_KV_MU_GATE. The code comments call it
-the sink gate (SG1 / SG2); the paper calls it the exemption gate.
+the sink gate (SG1 / SG2); the documentation calls it the exemption gate.
 With no switch set, every graph follows the upstream path.
 
 Apply: git -C <llama.cpp at 3bb63cb> apply <this file>   (scripts/build_llama_cpp.sh does this)

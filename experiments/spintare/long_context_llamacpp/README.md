@@ -1,6 +1,6 @@
 # E2: repair vs context length in llama.cpp (up to 128K)
 
-Source of the paper's `tab:length_engine`, measured on one RTX PRO 5000 (2026-11-23):
+Source of the context-length table, measured on one RTX PRO 5000 (2026-11-23):
 static post-RoPE mean (postmean) KL rises 211x by 64K on R1-Distill-Qwen-7B, against 2.0x with rotary
 add-back; 1.9-4.6x by 32K on Qwen3-0.6B and Qwen2.5-7B, against 0.84-1.03x; on Llama-3.1-8B postmean is
 1.52-1.57x worse than no repair at every length up to 128K.

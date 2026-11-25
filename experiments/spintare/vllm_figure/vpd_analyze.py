@@ -1,4 +1,4 @@
-"""Analyzer of the fig:vllm run (vpd_chain.sh): controls and panel values on one RTX PRO 5000.
+"""Analyzer of the vLLM-figure run (vpd_chain.sh): controls and panel values on one RTX PRO 5000.
 
 Controls (any failure -> exit 2, nothing from the round is used):
   C1 every KL arm present with finite, positive D; add-back arms built (addback_impls > 0)

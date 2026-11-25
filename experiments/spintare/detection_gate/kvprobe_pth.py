@@ -1,7 +1,7 @@
-"""b_top2 for vLLM's INT4 per-token-head K cache: kvprobe_unified.py (the paper's probe) plus one
+"""b_top2 for vLLM's INT4 per-token-head K cache: kvprobe_unified.py (the census probe) plus one
 format.
 
-The paper's configuration check (sec. 4: eq. bits / top2 / gate, tau_b = 2.028) forms the engine's
+The configuration check (effective bits, b_top2, frozen tau_b = 2.028) forms the engine's
 blocks from the post-RoPE keys of one 16-bit pass. llama.cpp's blocks are 32 wide (q4_0 / q4_1,
 optional whole-head Hadamard). vLLM's int4_per_token_head (5cb0fd265d, ops/int4_per_token_head.py)
 quantizes each (token, KV head) as ONE block of head_dim after its own randomized Hadamard transform

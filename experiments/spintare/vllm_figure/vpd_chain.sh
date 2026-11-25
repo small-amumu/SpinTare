@@ -1,5 +1,5 @@
 #!/bin/bash
-# The run behind fig:vllm (all panels, one RTX PRO 5000, 2026-11-23). Frozen output and the
+# The run behind the vLLM figure (all panels, one RTX PRO 5000, 2026-11-23). Frozen output and the
 # analyzer report: results/spintare/vllm_figure/ (vpd_result.json, vpd_analysis.txt).
 #   stage 0  tree vllm_59674 = vllm_plain + pr59674_applied.diff (PR #59674 on vLLM 5cb0fd265d;
 #            md5 of the four patched files checked)
@@ -54,7 +54,7 @@ export VLLM_USE_FLASHINFER_SAMPLER=0
 export VLLM_DISABLE_COMPILE_CACHE=1 FLASHINFER_WORKSPACE_BASE=$V/fi_base
 for v in $(env | sed -n 's/^\(\(SPINTARE\|VLLM_KV\)_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
 unset LD_PRELOAD
-# preflight: inputs present and pinned (mean files and the PR diff as used for the paper)
+# preflight: inputs present and pinned (mean files and the PR diff as used for the reported run)
 pin() {  # pin <file> <md5 prefix>
   local m
   [ -s "$1" ] || { echo "VPD VOID: missing $1"; exit 1; }
