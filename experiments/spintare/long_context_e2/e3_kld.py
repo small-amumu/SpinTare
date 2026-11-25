@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """E3: token-level KL(bf16 || candidate) from vLLM's own full-vocabulary logits (PREDICTIONS.md
 E2/E3 design).
 

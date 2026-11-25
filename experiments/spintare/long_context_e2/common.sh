@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # Helpers for the E2/E3 drivers in this directory (the subset of the shared server helper file they used).
 # Sourced after scripts/env.sh.
 PY=${KVREL_PYTHON}

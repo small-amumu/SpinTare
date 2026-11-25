@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Export per-layer effective bits (hadamard/q4_0, engine coordinates) of released GATE-PRED models
 with their worst q4_0 label, from the frozen configuration-check results.
 Usage: python export_layers.py > ../../../results/spintare/figure_inputs/layers.csv"""

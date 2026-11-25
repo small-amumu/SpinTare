@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """PRED-P: frozen predictors and scoring for the prospective test of the corrected single-forward
 predictors.
 

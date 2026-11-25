@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Score MECH-D: which model property predicts the 4-bit K failure (attention pattern vs shared key
 offset).
 

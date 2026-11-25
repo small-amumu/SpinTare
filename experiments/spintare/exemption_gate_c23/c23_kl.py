@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Exemption gate in simulation (line C23): whole-model effect of sink handling under centred Q4_0
 keys. GPU, one model per run.
 

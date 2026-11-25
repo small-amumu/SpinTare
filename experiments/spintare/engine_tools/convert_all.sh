@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # PM-X GGUF preparation (no measurement): fresh q8_0 conversions of the HF checkpoints by the llama.cpp-krot-llama
 # tree's convert_hf_to_gguf.py into ${KVREL_WORK}/pmllama/gguf/<tag>-q8_0.gguf, one log per tag (the runner requires its
 # "Model successfully exported" line). CPU only; skips a tag whose log already has that line.

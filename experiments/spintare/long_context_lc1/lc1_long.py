@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """LC1 (REGISTRATION_LC1.md): does static mean-centring of post-RoPE keys stop working as the
 context grows?
 

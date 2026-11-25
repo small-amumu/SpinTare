@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """One clean 16-bit forward per model: every per-cell feature used by the predictor comparison
 (GATE-PRED a1) and the mechanism-discrimination study (MECH-D).
 

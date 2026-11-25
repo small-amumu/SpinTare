@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Compare the evaluation token ids of energy_probe.py (<out>_tokens.i32) with those stored in a
 llama-perplexity --kl-divergence-base file (perplexity.cpp: "_logits_", int32 n_ctx, n_vocab,
 n_chunk, then n_ctx * n_chunk token ids; the same reader as md/code/engine_tools.py tokens). Writes

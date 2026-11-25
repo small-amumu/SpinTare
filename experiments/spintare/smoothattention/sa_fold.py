@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """SmoothAttention (QServe) for the K cache, folded into the checkpoint (REG_LCD A3 / REG_RLV A6).
 
 1. Calibration (16-bit HF forward, the B3 static-mean setting: long_text, first T = 2048 tokens): per layer, KV head

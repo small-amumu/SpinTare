@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # OV2 G2 (KL part) and G3 (REGISTRATION_OV2.md) on one RTX 5090 D, exclusive card (gpu0.lock).
 # llama-perplexity --kl-divergence against the logits of the same model with an F16 K / F16 V cache (mu6 build, no
 # mu, -ub 2), K4V4 arms with -ub 2 so that every graph is a decode graph:

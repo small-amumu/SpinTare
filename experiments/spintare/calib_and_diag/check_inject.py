@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Sanity check of a T6c injected checkpoint against its source (CPU, bf16).
 
 Checks: (1) the injected k bias minus the source k bias is non-zero only on the slow RoPE dims

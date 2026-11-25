@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # Exemption gate in simulation (C23): whole-model next-token KL with centred Q4_0 keys in every
 # layer; ten models x eight 4096-token windows, float32 weights, exact attention, one GPU (RTX PRO
 # 5000 in the registered run). Feeds the exemption-gate table. The quantizer is checked

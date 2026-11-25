@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """b_top2 for vLLM's INT4 per-token-head K cache: kvprobe_unified.py (the census probe) plus one
 format.
 

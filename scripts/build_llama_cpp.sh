@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # Build the llama.cpp engine trees used by the experiments: upstream llama.cpp at 3bb63cb, optionally with one of the
 # patches in patches/llama.cpp/.
 #

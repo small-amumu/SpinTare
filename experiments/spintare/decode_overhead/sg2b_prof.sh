@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # SG2 profile of the fused build (descriptive): where the remaining gate cost goes. nsys on the RTX 5090 D (exclusive), G0
 # protocol of OV2: per decode step = (t[tg 288] - t[tg 32]) / 256 per kernel; plus the CUDA API summary (graph
 # launches vs kernel launches). Arms kqpos and kqpos + gate, Qwen3-1.7B and Qwen2.5-7B, K4V4, depth 0 and 32768.

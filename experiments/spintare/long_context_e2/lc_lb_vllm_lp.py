@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """E2 variant of lc_lb_vllm.py: also stores generated token ids and top-2 log-probabilities per
 token.
 

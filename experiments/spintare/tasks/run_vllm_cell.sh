@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # One vLLM task cell (RULER 32K or LongBench 8K): start
 # `vllm serve` for one K-cache arm, run the client, stop the server.
 #

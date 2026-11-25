@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """fig_row_bars_col (single column, 3.0 in, included unscaled; plain-bar replacement for
 fig_keys_scatter_col).
 
@@ -13,7 +15,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 
-import make_figs_ch3 as m3
+import make_figs_mechanism as m3
 
 CASES = (
     ("Qwen3-0.6B_L5.npz", "Qwen3-0.6B, layer 5"),

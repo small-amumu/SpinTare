@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # Environment for the SpinTare scripts. Source it (every experiment driver sources it itself):
 #     . scripts/env.sh
 # Every path can be overridden before sourcing, e.g. KVREL_MODELS=/data/hf . scripts/env.sh

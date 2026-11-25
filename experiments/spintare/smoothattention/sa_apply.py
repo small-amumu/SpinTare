@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """CH4Z gate F0: re-create a SmoothAttention-folded checkpoint from a recorded lambda
 (REGISTRATION_CH4Z.md).
 

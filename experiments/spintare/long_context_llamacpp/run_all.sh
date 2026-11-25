@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # The full E2 grid (registry X-0081 / X-0085 / X-0086 and its two amendments), in the order the original
 # LSF jobs ran on one node (2 x V100-16GB; e2a*.lsf, e2b*.lsf). GPUs 0 and 1; lengths > 32768 use both.
 # Needs: scripts/build_llama_cpp.sh spintare and postmean; q8_0 weight GGUFs in $KVREL_GGUF named as below

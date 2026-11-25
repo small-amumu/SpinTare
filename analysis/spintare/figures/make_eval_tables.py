@@ -1,8 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Evaluation bar figures and LaTeX tables in the style of fig_eval_vllm (make_figs_eval_bars.py).
 
 Five results are figures (vLLM bars, gate heatmap, length-KL panels, position heatmap, Pareto); every
-other evaluation result is a numeric table or a bar chart in the vLLM-figure style. Data loading is reused from make_ch5_figs.py (same stored results, no new runs). Outputs:
-fig5b_*.pdf/png, tab5_*.tex, tables_preview.tex.
+other evaluation result is a numeric table or a bar chart in the vLLM-figure style. Data loading is reused from make_eval_figs.py (same stored results, no new runs). Outputs:
+fig_evalb_*.pdf/png, tab_eval_*.tex, tables_preview.tex.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # python -I drops the script dir
-import make_ch5_figs as D  # data + helpers; its rcParams are overridden below
+import make_eval_figs as D  # data + helpers; its rcParams are overridden below
 
 OUT = D.OUT
 mpl.rcParams.update(
@@ -150,7 +152,7 @@ def fig_reasoning_bars() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.13),
     )
-    save(fig, "fig5b_reasoning_bars")
+    save(fig, "fig_evalb_reasoning_bars")
 
 
 # ------------------------------------------------------------------ figure: b_top2 bins (cliff as
@@ -214,7 +216,7 @@ def fig_cliff_bars() -> None:
         loc="lower center",
         bbox_to_anchor=(0.5, 1.0),
     )
-    save(fig, "fig5b_btop2_bins")
+    save(fig, "fig_evalb_btop2_bins")
     D.NUMBERS["btop2_bins"] = {
         lab: {
             "n": int(n[i]),
@@ -284,7 +286,7 @@ def fig_waterfall_bars() -> None:
         )
     )
     legend(fig, handles, 5, loc="upper center", bbox_to_anchor=(0.5, 1.1))
-    save(fig, "fig5b_waterfall_bars")
+    save(fig, "fig_evalb_waterfall_bars")
 
 
 def fig_waterfall_bars_col() -> None:
@@ -353,7 +355,7 @@ def fig_waterfall_bars_col() -> None:
         bbox_to_anchor=(0.5, 1.01),
     )
     lg.get_frame().set_linewidth(0.5)
-    save(fig, "fig5b_waterfall_bars_col")
+    save(fig, "fig_evalb_waterfall_bars_col")
 
 
 # ------------------------------------------------------------------ LaTeX tables
@@ -379,7 +381,7 @@ def table(
     if note:
         t += f"\n\\par\\smallskip\\parbox{{\\linewidth}}{{\\scriptsize {note}}}\n"
     t += "\\end{table}\n"
-    (OUT / f"tab5_{name}.tex").write_text(t, encoding="utf-8")
+    (OUT / f"tab_eval_{name}.tex").write_text(t, encoding="utf-8")
     return t
 
 
@@ -608,7 +610,7 @@ def tables_preview(parts: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    # rebuild the numbers the tables use (same data path as make_ch5_figs.py, without redrawing its
+    # rebuild the numbers the tables use (same data path as make_eval_figs.py, without redrawing its
     # figures)
     plt.switch_backend("agg")
     D.save = lambda fig, name: plt.close(fig)  # numbers only; superseded figures are not redrawn

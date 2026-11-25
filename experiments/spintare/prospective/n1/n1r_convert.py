@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Run the census convert_hf_to_gguf.py with a pre-tokenizer mapping for two N1 models.
 
 The census converter (llama.cpp 3bb63cb) does not list the chkhsh of DeepSeek-R1-Distill-Llama-8B and

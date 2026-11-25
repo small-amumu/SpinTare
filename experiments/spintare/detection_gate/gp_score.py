@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Score GATE-PRED amendment 1: every predictor against the registered task labels on TRAIN-I /
 TEST-N / TEST-P.
 

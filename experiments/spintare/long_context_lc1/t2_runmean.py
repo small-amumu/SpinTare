@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """T2 (ext_compare/REGISTRATION_T2_runmean.md): turboQuantDC's running-mean key centring in the LC1
 harness.
 

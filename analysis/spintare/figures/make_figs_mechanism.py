@@ -1,4 +1,6 @@
-"""Chapter 3 figures in the style of the reference figures (scatter + layered confidence halos;
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
+"""Mechanism figures in the style of the reference figures (scatter + layered confidence halos;
 per-layer curves + layered bands).
 
 fig_keys_scatter : one KV head of one layer, post-RoPE keys projected on (offset direction, top

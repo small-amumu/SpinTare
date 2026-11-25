@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Item-paired bootstrap interval for LongBench and the registered verdict rule.
 Usage: python paired_ci.py <result dir results/lc/<model>> <base label, e.g. f16_n50>
        <quant label, e.g. q4_0_n50> [--B 10000] [--seed 0]

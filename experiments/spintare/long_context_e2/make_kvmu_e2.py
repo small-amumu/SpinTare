@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """E2: write the m = 0 and random-constant KVMU files with the layout of an existing postmean file.
 
 rc: per layer and kv head a Gaussian direction (seed 0) scaled to the L2 norm of m for that layer

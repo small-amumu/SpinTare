@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 # The run behind the vLLM figure (all panels, one RTX PRO 5000, 2026-11-23). Frozen output and the
 # analyzer report: results/spintare/vllm_figure/ (vpd_result.json, vpd_analysis.txt).
 #   stage 0  tree vllm_59674 = vllm_plain + pr59674_applied.diff (PR #59674 on vLLM 5cb0fd265d;

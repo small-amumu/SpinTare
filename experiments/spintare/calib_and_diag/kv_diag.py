@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """Pre-deployment diagnosis for any HF causal LM: per-layer offset ratio of the pre-RoPE keys,
 r_l = mean over KV heads of |mu_h| / mean |k - mu_h|. Needs a model directory and a short English
 text and finishes in seconds. Also reports whether k_proj has a bias, its norm and its cosine with

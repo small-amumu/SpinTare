@@ -59,12 +59,12 @@ gate by a further 1.4-4.2 points, and its F32 row flags add 5.6% to the K memory
       <sub><b>A static mean stops working beyond its calibration window</b> (shaded). Output KL along
       32K on the five models that need centring; rotary centring stays flat, the exemption gate
       lowers it further.</sub></td>
-    <td width="50%" align="center"><img src="docs/figures/fig5_7_pareto_reasoning_col.png" width="100%"><br>
+    <td width="50%" align="center"><img src="docs/figures/fig_eval_pareto_reasoning_col.png" width="100%"><br>
       <sub><b>Accuracy against KV memory per generation</b> (R1-Distill-Qwen-7B, llama.cpp). A
       collapsed cache loops until the budget runs out; SpinTare keeps 16-bit generation lengths.</sub></td>
   </tr>
   <tr>
-    <td width="50%" align="center"><img src="docs/figures/fig5b_waterfall_bars_col.png" width="100%"><br>
+    <td width="50%" align="center"><img src="docs/figures/fig_evalb_waterfall_bars_col.png" width="100%"><br>
       <sub><b>Each repair step at equal bits</b>, output KL at 32K. (a) Models the configuration check
       sends to centring. (b) Low-offset models with centring forced: centring without the gate is worse
       than no repair (red arrows).</sub></td>
@@ -131,7 +131,7 @@ frozen result and the GPU. Everything that is an aggregate re-derives on a CPU:
 ```bash
 scripts/stage_results.sh
 python analysis/spintare/z_analyses.py            # tau_b = 2.028, LOFO BA 0.967, ablations
-FIG_OUT=work/figures python analysis/spintare/figures/make_ch5_bars.py
+FIG_OUT=work/figures python analysis/spintare/figures/make_eval_tables.py
 ```
 
 The task tables run cell by cell, e.g. with `GGUF`, `HF`, `MU` and `RULER_DATA` set,

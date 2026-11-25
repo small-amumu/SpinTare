@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The SpinTare Authors
 """E2 scoring (PREDICTIONS.md E2/E3 design): answer identity vs bf16lp and the bf16 top-1/top-2
 margin at the first differing generated token."""
 
