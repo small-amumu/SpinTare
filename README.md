@@ -85,6 +85,7 @@ gate by a further 1.4-4.2 points, and its F32 row flags add 5.6% to the K memory
 | Python package `spintare`: configuration check and engine check, mean files, layout tools, baselines | `spintare/` |
 | One folder per study: probes and model sets, task runners, simulations, decode timing | `experiments/spintare/` |
 | Frozen results behind the tables and figures, re-derived on a CPU (coverage in [docs/reproduction.md](docs/reproduction.md)) | `results/spintare/`, `analysis/spintare/` |
+| `kvsel`: probe -> KV-cache configuration selector (K format, repair, fallback per engine), its offline check and the X5 add-back check ([docs/kvsel/README.md](docs/kvsel/README.md)) | `kvsel/`, `analysis/kvsel/`, `experiments/kvsel/`, `results/kvsel/` |
 
 ## Install
 

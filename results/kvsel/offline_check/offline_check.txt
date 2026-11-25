@@ -1,0 +1,107 @@
+tau_b 2.0280; max |b_top2 kvsel - z_analyses| = 0.00e+00
+fit LOFO (z_analyses.lofo): {'ba': 0.9666666666666667, 'misclear': 2, 'misclear_collapse': 0, 'false_alarm': 0}; in-sample {'tau_refit': 2.0280476994784027, 'ba_at_frozen_tau': 0.9833333333333334}
+
+## fit (60 natural cells): {'n': 60, 'damaged': 30, 'misclear': 1, 'misclear_collapse': 0, 'false_alarm': 0, 'ba': 0.9833333333333334}  wrong basis: {'n': 60, 'damaged': 30, 'misclear': 3, 'misclear_collapse': 2, 'false_alarm': 0, 'ba': 0.95}  basis flips 2
+  ERR Yi-1.5-6B q4_0 y=1 b_top2=2.969 D=0.015549 diff=None f16=None bias=0.0 rot=128/128 kvh=4 il=False
+
+## held-out PRED-P (usable): {'n': 20, 'damaged': 9, 'misclear': 0, 'misclear_collapse': 0, 'false_alarm': 0, 'ba': 1.0}  wrong basis: {'n': 20, 'damaged': 9, 'misclear': 0, 'misclear_collapse': 0, 'false_alarm': 0, 'ba': 1.0}  basis flips 0
+
+## held-out N13 (usable): {'n': 12, 'damaged': 3, 'misclear': 0, 'misclear_collapse': 0, 'false_alarm': 0, 'ba': 1.0}  wrong basis: {'n': 12, 'damaged': 3, 'misclear': 0, 'misclear_collapse': 0, 'false_alarm': 0, 'ba': 1.0}  basis flips 0
+
+## blind N1 (usable): {'n': 18, 'damaged': 2, 'misclear': 2, 'misclear_collapse': 1, 'false_alarm': 1, 'ba': 0.46875}  wrong basis: {'n': 18, 'damaged': 2, 'misclear': 2, 'misclear_collapse': 1, 'false_alarm': 1, 'ba': 0.46875}  basis flips 0
+  ERR glm4_9b q4_1 y=0 b_top2=1.198 D=0.05929 diff=-0.92 f16=47.687102990481755 bias=7.75 rot=64/128 kvh=2 il=True
+  ERR r1q3_8b q4_0norot y=2 b_top2=2.175 D=0.20152 diff=-7.91 f16=8.40625 bias=0.0 rot=128/128 kvh=8 il=False
+  ERR hermes3_3b q4_0norot y=1 b_top2=2.696 D=0.087852 diff=-6.57 f16=43.840762596757145 bias=0.0 rot=128/128 kvh=8 il=False
+
+## injected N4 (usable): {'n': 6, 'damaged': 6, 'misclear': 5, 'misclear_collapse': 1, 'false_alarm': 0, 'ba': nan}  wrong basis: {'n': 6, 'damaged': 6, 'misclear': 5, 'misclear_collapse': 1, 'false_alarm': 0, 'ba': nan}  basis flips 2
+  ERR llama31_8b_n4r4 q4_0norot y=1 b_top2=2.483 D=0.05809 diff=-7.26 f16=39.22297559177508 bias=7.46875 rot=128/128 kvh=8 il=False
+  ERR llama31_8b_n4r8 q4_0 y=1 b_top2=2.963 D=0.082034 diff=-6.01 f16=23.976457852570046 bias=14.9375 rot=128/128 kvh=8 il=False
+  ERR llama31_8b_n4r8 q4_0norot y=1 b_top2=2.141 D=0.106008 diff=-6.74 f16=23.976457852570046 bias=14.9375 rot=128/128 kvh=8 il=False
+  ERR llama31_8b_n4r8 q4_1 y=1 b_top2=3.045 D=0.063007 diff=-6.41 f16=23.976457852570046 bias=14.9375 rot=128/128 kvh=8 il=False
+  ERR llama31_8b_n4r16 q4_1 y=2 b_top2=3.028 D=0.271274 diff=-4.53 f16=8.664609932212915 bias=29.875 rot=128/128 kvh=8 il=False
+
+## serving policy: {
+ "n_cells": 24,
+ "n_undecided_cells": 4,
+ "convention": "every 4-bit cell counted as 4.5 bits (q4_1 too); 8-bit cells are assumed to lose 0 points",
+ "always_4bit (4.5-bit convention)": {
+  "mean_delta": -9.133333333333333,
+  "bits": 4.5
+ },
+ "always_4bit, q4_1 counted 5.0": {
+  "mean_delta": -9.133333333333333,
+  "bits": 4.666666666666667
+ },
+ "always_8bit": {
+  "mean_delta": 0.0,
+  "bits": 8.5
+ },
+ "flag -> q8_0 (SpinTare check, 8-bit fallback; kvsel on upstream llama.cpp)": {
+  "mean_delta": -0.6825,
+  "bits": 6.0
+ },
+ "flag -> q8_0, q4_1 counted 5.0": {
+  "mean_delta": -0.6825,
+  "bits": 6.104166666666667
+ },
+ "four_bit_cells": 15,
+ "kvsel_patched (flag -> q4 + SpinTare)": "task delta of SpinTare not measured on these cells (to test)"
+}
+
+## scenarios
+   {'model': 'coder_3b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 36, 'kvh': 2, 'gqa': 8, 'rot_dim': 128, 'b_top2_had_q4_0': 0.405, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'dsllm7b', 'model_type': 'llama', 'rope': None, 'd': 128, 'L': 30, 'kvh': 32, 'gqa': 1, 'rot_dim': 128, 'b_top2_had_q4_0': 3.136, 'llama.cpp upstream, 32K, 6 GiB': 'none', 'llama.cpp + SpinTare, 32K, 6 GiB': 'none', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'ernie45_0p3b', 'model_type': 'ernie4_5', 'rope': None, 'd': 128, 'L': 18, 'kvh': 2, 'gqa': 8, 'rot_dim': 128, 'b_top2_had_q4_0': 2.795, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'exaone4_1b', 'model_type': 'exaone4', 'rope': 'llama3', 'd': 64, 'L': 30, 'kvh': 8, 'gqa': 4, 'rot_dim': 64, 'b_top2_had_q4_0': 3.349, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'falcon3_1b', 'model_type': 'llama', 'rope': None, 'd': 256, 'L': 18, 'kvh': 4, 'gqa': 2, 'rot_dim': 256, 'b_top2_had_q4_0': 3.1, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'falcon3_3b', 'model_type': 'llama', 'rope': None, 'd': 256, 'L': 22, 'kvh': 4, 'gqa': 3, 'rot_dim': 256, 'b_top2_had_q4_0': 2.711, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'falcon3_7b', 'model_type': 'llama', 'rope': None, 'd': 256, 'L': 28, 'kvh': 4, 'gqa': 3, 'rot_dim': 256, 'b_top2_had_q4_0': 2.618, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'gemma2_2b', 'model_type': 'gemma2', 'rope': None, 'd': 256, 'L': 26, 'kvh': 4, 'gqa': 2, 'rot_dim': 256, 'b_top2_had_q4_0': 3.207, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'gemma2_9b', 'model_type': 'gemma2', 'rope': None, 'd': 256, 'L': 42, 'kvh': 8, 'gqa': 2, 'rot_dim': 256, 'b_top2_had_q4_0': 3.207, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'gemma3_1b', 'model_type': 'gemma3_text', 'rope': None, 'd': 256, 'L': 26, 'kvh': 1, 'gqa': 4, 'rot_dim': 256, 'b_top2_had_q4_0': 3.041, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'glm4_9b', 'model_type': 'glm4', 'rope': None, 'd': 128, 'L': 40, 'kvh': 2, 'gqa': 16, 'rot_dim': 64, 'b_top2_had_q4_0': 1.185, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q8_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'bf16'}
+   {'model': 'granite31_8b', 'model_type': 'granite', 'rope': None, 'd': 128, 'L': 40, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.546, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'granite33_2b', 'model_type': 'granite', 'rope': None, 'd': 64, 'L': 40, 'kvh': 8, 'gqa': 4, 'rot_dim': 64, 'b_top2_had_q4_0': 2.577, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'granite33_8b', 'model_type': 'granite', 'rope': None, 'd': 128, 'L': 40, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.718, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'hermes3_3b', 'model_type': 'llama', 'rope': 'llama3', 'd': 128, 'L': 28, 'kvh': 8, 'gqa': 3, 'rot_dim': 128, 'b_top2_had_q4_0': 3.035, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'llama31_8b', 'model_type': 'llama', 'rope': 'llama3', 'd': 128, 'L': 32, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 3.012, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'llama32_1b', 'model_type': 'llama', 'rope': 'llama3', 'd': 64, 'L': 16, 'kvh': 8, 'gqa': 4, 'rot_dim': 64, 'b_top2_had_q4_0': 2.977, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'llama32_3b', 'model_type': 'llama', 'rope': 'llama3', 'd': 128, 'L': 28, 'kvh': 8, 'gqa': 3, 'rot_dim': 128, 'b_top2_had_q4_0': 3.046, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'mistral7b', 'model_type': 'mistral', 'rope': None, 'd': 128, 'L': 32, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.864, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'olmo2_1b', 'model_type': 'olmo2', 'rope': None, 'd': 128, 'L': 16, 'kvh': 16, 'gqa': 1, 'rot_dim': 128, 'b_top2_had_q4_0': 3.457, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'olmo2_7b', 'model_type': 'olmo2', 'rope': None, 'd': 128, 'L': 32, 'kvh': 32, 'gqa': 1, 'rot_dim': 128, 'b_top2_had_q4_0': 3.477, 'llama.cpp upstream, 32K, 6 GiB': 'none', 'llama.cpp + SpinTare, 32K, 6 GiB': 'none', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'phi4mini', 'model_type': 'phi3', 'rope': 'longrope', 'd': 128, 'L': 32, 'kvh': 8, 'gqa': 3, 'rot_dim': 96, 'b_top2_had_q4_0': 3.146, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'pythia_1p4b', 'model_type': 'gpt_neox', 'rope': None, 'd': 128, 'L': 24, 'kvh': 16, 'gqa': 1, 'rot_dim': 32, 'b_top2_had_q4_0': 0.605, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q8_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'bf16'}
+   {'model': 'qwen25_0p5b', 'model_type': 'qwen2', 'rope': None, 'd': 64, 'L': 24, 'kvh': 2, 'gqa': 7, 'rot_dim': 64, 'b_top2_had_q4_0': 1.44, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25_14b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 48, 'kvh': 8, 'gqa': 5, 'rot_dim': 128, 'b_top2_had_q4_0': 2.367, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'qwen25_1p5b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 2, 'gqa': 6, 'rot_dim': 128, 'b_top2_had_q4_0': -1.011, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25_3b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 36, 'kvh': 2, 'gqa': 8, 'rot_dim': 128, 'b_top2_had_q4_0': 0.683, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25_7b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 4, 'gqa': 7, 'rot_dim': 128, 'b_top2_had_q4_0': 0.2, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25coder_1p5b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 2, 'gqa': 6, 'rot_dim': 128, 'b_top2_had_q4_0': -1.258, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25coder_7b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 4, 'gqa': 7, 'rot_dim': 128, 'b_top2_had_q4_0': 0.02, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25math_1p5b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 2, 'gqa': 6, 'rot_dim': 128, 'b_top2_had_q4_0': 1.214, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen25math_7b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 4, 'gqa': 7, 'rot_dim': 128, 'b_top2_had_q4_0': 1.537, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen2_0p5b', 'model_type': 'qwen2', 'rope': None, 'd': 64, 'L': 24, 'kvh': 2, 'gqa': 7, 'rot_dim': 64, 'b_top2_had_q4_0': 0.922, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen2_1p5b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 2, 'gqa': 6, 'rot_dim': 128, 'b_top2_had_q4_0': -0.661, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen2_7b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 4, 'gqa': 7, 'rot_dim': 128, 'b_top2_had_q4_0': 0.337, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen3_0p6b', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 28, 'kvh': 8, 'gqa': 2, 'rot_dim': 128, 'b_top2_had_q4_0': 1.94, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen3_14b', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 40, 'kvh': 8, 'gqa': 5, 'rot_dim': 128, 'b_top2_had_q4_0': 2.408, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'qwen3_1p7b', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 28, 'kvh': 8, 'gqa': 2, 'rot_dim': 128, 'b_top2_had_q4_0': 2.028, 'llama.cpp upstream, 32K, 6 GiB': 'q4_1', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen3_1p7b_base', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 28, 'kvh': 8, 'gqa': 2, 'rot_dim': 128, 'b_top2_had_q4_0': 2.027, 'llama.cpp upstream, 32K, 6 GiB': 'q4_1', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'qwen3_4b', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 36, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.552, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'qwen3_4b_2507', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 36, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.438, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'qwen3_4b_base', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 36, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.512, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'qwen3_8b', 'model_type': 'qwen3', 'rope': None, 'd': 128, 'L': 36, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.377, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'r1l_8b', 'model_type': 'llama', 'rope': 'llama3', 'd': 128, 'L': 32, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 3.048, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'r1q3_8b', 'model_type': 'qwen3', 'rope': 'yarn', 'd': 128, 'L': 36, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.335, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'r1q_14b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 48, 'kvh': 8, 'gqa': 5, 'rot_dim': 128, 'b_top2_had_q4_0': 2.352, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'r1q_1p5b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 2, 'gqa': 6, 'rot_dim': 128, 'b_top2_had_q4_0': 1.214, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'r1q_7b', 'model_type': 'qwen2', 'rope': None, 'd': 128, 'L': 28, 'kvh': 4, 'gqa': 7, 'rot_dim': 128, 'b_top2_had_q4_0': 1.533, 'llama.cpp upstream, 32K, 6 GiB': 'q8_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0+spintare', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head+spintare'}
+   {'model': 'smollm2_1p7b', 'model_type': 'llama', 'rope': None, 'd': 64, 'L': 24, 'kvh': 32, 'gqa': 1, 'rot_dim': 64, 'b_top2_had_q4_0': 2.906, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'smollm2_360m', 'model_type': 'llama', 'rope': None, 'd': 64, 'L': 32, 'kvh': 5, 'gqa': 3, 'rot_dim': 64, 'b_top2_had_q4_0': 2.879, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'smollm3_3b', 'model_type': 'smollm3', 'rope': None, 'd': 128, 'L': 36, 'kvh': 4, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 2.989, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'stablelm2', 'model_type': 'stablelm', 'rope': None, 'd': 64, 'L': 24, 'kvh': 32, 'gqa': 1, 'rot_dim': 16, 'b_top2_had_q4_0': 2.596, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'stablelm2_zephyr', 'model_type': 'stablelm', 'rope': None, 'd': 64, 'L': 24, 'kvh': 32, 'gqa': 1, 'rot_dim': 16, 'b_top2_had_q4_0': 2.593, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'starcoder2_7b', 'model_type': 'starcoder2', 'rope': None, 'd': 128, 'L': 32, 'kvh': 4, 'gqa': 9, 'rot_dim': 128, 'b_top2_had_q4_0': 3.105, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'tulu3_8b', 'model_type': 'llama', 'rope': 'llama3', 'd': 128, 'L': 32, 'kvh': 8, 'gqa': 4, 'rot_dim': 128, 'b_top2_had_q4_0': 3.027, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}
+   {'model': 'yi15_6b', 'model_type': 'llama', 'rope': None, 'd': 128, 'L': 32, 'kvh': 4, 'gqa': 8, 'rot_dim': 128, 'b_top2_had_q4_0': 2.969, 'llama.cpp upstream, 32K, 6 GiB': 'q4_0', 'llama.cpp + SpinTare, 32K, 6 GiB': 'q4_0', 'vLLM + SpinTare plugin, 32K, 6 GiB': 'int4_per_token_head'}

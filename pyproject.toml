@@ -21,7 +21,7 @@ test = ["pytest", "gguf>=0.19"]
 spintare = "spintare.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["spintare*"]
+include = ["spintare*", "kvsel*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
