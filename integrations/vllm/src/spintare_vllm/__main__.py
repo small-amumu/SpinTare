@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """python -m spintare_vllm <command>: check | kld | calib-mu."""
 
 from __future__ import annotations

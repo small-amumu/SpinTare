@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """RULER client for a vLLM OpenAI-compatible server: the vLLM port of lc_ruler.py (60782e3a,
 llama.cpp E2 / CH4Y).
 

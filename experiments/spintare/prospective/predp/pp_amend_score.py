@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """PRED-P amendment 1 scoring: the natural-only thresholds (P_top2n, P_klmn) on the PRED-P cells,
 prospective cells separated from the others (prospective = no task summary when amendment 1 was
 appended, 04:05:15Z)."""

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """T6c controlled injection (v2 of inject_offset.py; the T6 script is left unchanged).
 
 T6m copy (inject_offset_v2m.py): identical construction; the only change is in saving -- models with

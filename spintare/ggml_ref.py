@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Reference re-implementations of llama.cpp's K-cache numerics (one place for every caller).
 
 Engine-exact functions (used by the `spintare` tools):

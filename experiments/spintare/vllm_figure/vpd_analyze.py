@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Analyzer of the vLLM-figure run (vpd_chain.sh): controls and panel values on one RTX PRO 5000.
 
 Controls (any failure -> exit 2, nothing from the round is used):

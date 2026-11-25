@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # Running-mean baseline (T2) in the LC1 harness at 32K: the twelve LC1 models, bfloat16 weights, one
 # GPU (RTX 5090 D in the reported run), one model at a time. Feeds the "Run" columns of the 32K
 # output-KL tables. Aggregate afterwards with

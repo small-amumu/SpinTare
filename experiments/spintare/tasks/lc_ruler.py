@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """RU section: RULER (NVIDIA/RULER, arXiv 2404.06654) on llama.cpp with real K-cache quantization.
 
 Data: jsonl produced by RULER's scripts/data/prepare.py (--model_template_type base) per model

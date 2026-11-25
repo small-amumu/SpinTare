@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # PRED-P probe runner = GATE-PRED a1 run_gp_probe.sh with the PRED-P paths (X, model list); otherwise unchanged. Per model of models_pp_probe.txt, in order: the engine K order and
 # GGUF BOS flag (reuse PM-X results/<tag>/check_layout.out when present, else check_layout.py on the census GGUF;
 # "-=<tag>" reuses that tag's result; "@<order>:<add_bos>" is a fixed layout read from the converter source and the

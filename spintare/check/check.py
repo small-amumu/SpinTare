@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """SpinTare pre-deployment check for llama.cpp's quantised K cache.
 
 For each candidate K-cache format (smallest first) the check measures D, the mean output KL

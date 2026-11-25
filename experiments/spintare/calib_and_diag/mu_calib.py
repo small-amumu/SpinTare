@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """B1: estimate the shared key component mu for the llama.cpp KV de-offset patch
 (LLAMA_KV_DEBIAS_MU).
 

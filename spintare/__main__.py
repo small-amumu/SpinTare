@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Command-line entry point: python -m spintare <command> [args].
 
 Commands (each prints its own usage with -h, or with no arguments for the positional-argument

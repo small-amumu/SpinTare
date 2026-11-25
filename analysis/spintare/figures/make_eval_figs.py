@@ -1,7 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Evaluation data figures and tables for SpinTare, recomputed from stored results only (no new
 runs).
 
-Outputs (next to this script): fig5_*.pdf/png, tab5_*.md, ch5_numbers.json.
+Outputs (next to this script): fig_eval_*.pdf/png, tab_eval_*.md, eval_numbers.json.
 Style follows make_figs.py (Okabe-Ito, 7.5 pt, print size).
 """
 
@@ -186,7 +188,7 @@ def fig_teaser() -> None:
         handlelength=1.0,
         columnspacing=0.8,
     )
-    save(fig, "fig5_1_teaser")
+    save(fig, "fig_eval_teaser")
 
 
 # ------------------------------------------------------------------ RQ1: position x arm heatmap
@@ -236,7 +238,7 @@ def fig_pos_heatmap() -> None:
     )
     cb = fig.colorbar(im, ax=axes, fraction=0.025, pad=0.01)
     cb.set_label(r"log$_{10}$(KL$_{arm}$ / KL$_{no\ repair}$)", fontsize=6.5)
-    save(fig, "fig5_2_position_heatmap")
+    save(fig, "fig_eval_position_heatmap")
     NUMBERS["heatmap_32k"] = {
         arm: {m: round(float(M[i, 4]), 3) for i, m in enumerate(ORDER)}
         for (arm, _), M in zip(arms, mats)
@@ -294,7 +296,7 @@ def fig_pos_heatmap_col() -> None:
         r"$\log_{10}(\mathrm{KL}_{\mathrm{arm}}/\mathrm{KL}_{\mathrm{no\ repair}})$", fontsize=6
     )
     cb.ax.tick_params(labelsize=6, length=1.5)
-    save(fig, "fig5_2_position_heatmap_col")
+    save(fig, "fig_eval_position_heatmap_col")
 
 
 # ------------------------------------------------------------------ RQ1: rho structure -> behaviour
@@ -348,7 +350,7 @@ def fig_rho() -> None:
     b.plot([], [], "-o", color=C["gate"], ms=2.5, label="centring selected")
     b.plot([], [], "-o", color=C["none"], ms=2.5, label="not selected")
     b.legend(frameon=False, fontsize=6)
-    save(fig, "fig5_3_rho_structure")
+    save(fig, "fig_eval_rho_structure")
     NUMBERS["rho_vs_static_penalty_spearman"] = round(spearman(ks, kl), 3)
     NUMBERS["rho_pred_spearman_per_model"] = {
         m: round(LC1[m]["fit"]["B2"]["spearman_pred"], 3) for m in ORDER
@@ -435,7 +437,7 @@ def fig_row_gate() -> None:
         fontsize=5.8,
         va="top",
     )
-    save(fig, "fig5_4_row_gate")
+    save(fig, "fig_eval_row_gate")
     NUMBERS["row_gate"] = out
 
 
@@ -496,7 +498,7 @@ def fig_cliff() -> None:
         ax.scatter([], [], marker="s", color=col[y], s=12, label=lab)
     ax.legend(frameon=False, fontsize=5.3, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.2))
     ax.set_title("Collapse cliff below the frozen threshold", loc="left", fontsize=7)
-    save(fig, "fig5_5_btop2_cliff")
+    save(fig, "fig_eval_btop2_cliff")
     below = [r for r in rows if r["b_top2"] <= tau]
     above = [r for r in rows if r["b_top2"] > tau]
     NUMBERS["cliff"] = {
@@ -569,8 +571,8 @@ def tab_fail_causes() -> None:
     axes[1].legend(
         frameon=False, fontsize=6, ncol=4, loc="upper center", bbox_to_anchor=(-0.1, -0.35)
     )
-    save(fig, "fig5_6_failure_causes")
-    (OUT / "tab5_failure_causes.md").write_text(
+    save(fig, "fig_eval_failure_causes")
+    (OUT / "tab_eval_failure_causes.md").write_text(
         "# Reasoning failure causes (R1-Distill-Qwen-7B, llama.cpp, CH4X items)\n\n"
         "Loop and length cap are counted only among wrong items; a looping item that also hit the cap "
         "counts as Loop.\n\n" + "\n".join(lines) + "\n",
@@ -677,7 +679,7 @@ def fig_pareto_reasoning() -> None:
         handlelength=2.0,
         columnspacing=1.2,
     )
-    save(fig, "fig5_7_pareto_reasoning")
+    save(fig, "fig_eval_pareto_reasoning")
     NUMBERS["pareto_reasoning"] = out
 
 
@@ -801,7 +803,7 @@ def fig_pareto_combined() -> None:
         loc="left",
         fontsize=7,
     )
-    save(fig, "fig5_7_pareto_reasoning")
+    save(fig, "fig_eval_pareto_reasoning")
 
 
 def fig_pareto_combined_col() -> None:
@@ -905,7 +907,7 @@ def fig_pareto_combined_col() -> None:
         columnspacing=1.2,
         labelspacing=0.3,
     )
-    save(fig, "fig5_7_pareto_reasoning_col")
+    save(fig, "fig_eval_pareto_reasoning_col")
 
 
 # ------------------------------------------------------------------ RQ4: component waterfall (KL)
@@ -948,7 +950,7 @@ def tab_waterfall() -> None:
             lines.append(f"| {lab} | {v:.4g} | {r} | {v / base:.3f} |")
             prev = v
         lines.append("")
-    (OUT / "tab5_waterfall_kl.md").write_text("\n".join(lines), encoding="utf-8")
+    (OUT / "tab_eval_waterfall_kl.md").write_text("\n".join(lines), encoding="utf-8")
 
 
 # ------------------------------------------------------------------ RQ1: length table (engine)
@@ -984,13 +986,13 @@ def tab_length() -> None:
         "",
         "Empty cells were not run in E2. abbias/abmu carry no exemption gate (not full SpinTare).",
     ]
-    (OUT / "tab5_length_engine.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (OUT / "tab_eval_length_engine.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
     # 2026-11-22: only the position heatmap and the Pareto plot stay as figures; the rest are tables
     # or
-    # vLLM-style bars in make_ch5_bars.py. The other fig_* functions remain for their numbers.
+    # vLLM-style bars in make_eval_tables.py. The other fig_* functions remain for their numbers.
     fig_pos_heatmap()
     fig_pos_heatmap_col()
     tab_fail_causes()
@@ -999,7 +1001,7 @@ if __name__ == "__main__":
     fig_pareto_reasoning()
     fig_pareto_combined()
     fig_pareto_combined_col()
-    (OUT / "ch5_numbers.json").write_text(
+    (OUT / "eval_numbers.json").write_text(
         json.dumps(NUMBERS, indent=1, ensure_ascii=False), encoding="utf-8"
     )
     print(

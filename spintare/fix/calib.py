@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Static post-RoPE key mean m for llama.cpp's postmean repair (LLAMA_KV_POSTMEAN).
 
 m[l][h] is the mean over calibration positions 0..T-1 of the post-RoPE key of layer l, kv head h

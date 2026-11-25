@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Dump post-RoPE keys of one layer, all KV heads, for a 3D surface figure (descriptive, no
 measurement).
 

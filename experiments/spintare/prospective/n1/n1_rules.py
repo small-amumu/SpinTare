@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """N1: blind-selected non-Qwen2 prospective set. Selection, frozen decisions and scoring.
 
 Selection (registered before any N1 probe): per candidate model, m = min over q4_0 / q4_0norot /

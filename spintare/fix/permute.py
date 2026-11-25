@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Reorder a KVPM file (`spintare calib` output, HF channel order) into the GGUF channel order of
 Llama-family models.
 

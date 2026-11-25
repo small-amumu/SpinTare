@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Small-sample task evaluation: LongBench subtasks on llama.cpp's real quantised K cache
 (llama-server client).
 

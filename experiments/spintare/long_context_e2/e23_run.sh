@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # E2 then E3 on one RTX PRO 5000 (GPU3; PREDICTIONS.md "E2/E3 design", 03:07:33Z). vLLM main 0c16eee3, TRITON_ATTN, eager.
 . "$(cd "$(dirname "$0")/../../.." && pwd)/scripts/env.sh"  # KVREL_* paths (see docs/setup.md)
 HERE=$(cd "$(dirname "$0")" && pwd); . "$HERE/common.sh"

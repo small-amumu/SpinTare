@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """SpinTare pre-deployment check for vLLM's low-bit KV caches.
 
 For each candidate KV format (smallest first) the check measures D, the mean output KL against the

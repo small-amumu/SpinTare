@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # SG2 E1-E2 (REGISTRATION_SG2.md) on one RTX 5090 D, exclusive card (gpu0.lock); mu6 tree with SG1 + SG2.
 # llama-perplexity --kl-divergence against the same model with an F16 K / F16 V cache (no mu, -ub 2), K4V4, 2K,
 # 32 chunks: kqpos with the gate unset (E2), gate=1 with -ub 2 (E1 decode) and with the default ubatch (E1 prefill).

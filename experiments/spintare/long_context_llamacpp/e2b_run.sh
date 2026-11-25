@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # E2 phase B (registry X-0086): repairs vs context length. Same text, flags and K/V formats as phase A (e2a_run.sh).
 # Original run: one node with 2 x V100-16GB, 2026-11-07, script e2b_run.sh md5 4e5643b8, all cells in one research
 # llama.cpp tree (llama.cpp-krot-llama, learned-rotation switch off). Changes here: paths, and each cell runs on the

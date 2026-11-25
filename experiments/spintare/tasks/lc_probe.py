@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Needle-in-a-haystack probe as a detection baseline (after the NIAH probe of SpectrumKV), on
 llama.cpp with a real quantized K cache; compared with the one-pass offset statistics for cost and
 accuracy.

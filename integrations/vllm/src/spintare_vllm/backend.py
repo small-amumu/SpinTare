@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """SpinTare postmean as a vLLM attention backend (Triton backend + one subtraction at cache write).
 
 The key of every new token has the static post-RoPE mean m[layer, kv_head] subtracted right before

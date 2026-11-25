@@ -5,7 +5,7 @@ index 0000000..25eb148
 +++ b/src/models/kv-pm.h
 @@ -0,0 +1,124 @@
 +// SPDX-License-Identifier: Apache-2.0
-+// Copyright 2026 The SpinTare Authors
++// Copyright 2026 Zijie Hu
 +
 +#pragma once
 +

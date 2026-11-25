@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Pre-RoPE key mean mu and the model's RoPE frequencies, for the vLLM add-back (KVMR file).
 
 mu[l][h] is the mean over T calibration tokens of the pre-RoPE key of layer l, KV head h, taken

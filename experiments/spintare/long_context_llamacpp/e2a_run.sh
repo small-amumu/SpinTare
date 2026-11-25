@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # E2 phase A (registry X-0081 / X-0085): length dependence of the engine output KL D without repair.
 # Original run: one node with 2 x V100-16GB, 2026-11-06/07, script e2a_run_v3.sh (only paths changed here).
 # usage: e2a_run.sh <gpu 0|1|0,1> <model tag> <native max ctx> ["<lengths>"]

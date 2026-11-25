@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Shared Hugging Face simulation of llama.cpp's quantised K cache.
 
 All tools that simulate the engine use this module; the quantiser, the channel order and the

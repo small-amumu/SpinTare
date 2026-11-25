@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """e2_analyze (v2): SpinTare E2, phases A (X-0081/X-0085) and B (X-0086).
 Reads runs/e2a/<tag>/run.log and runs/e2b/<tag>/run.log pulled from the run machine and judges the
 frozen X-0086 predictions on a fixed expected grid (missing data -> INCOMPLETE, never HOLDS/FAILS):

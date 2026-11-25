@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # SG2 T1 (REGISTRATION_SG2.md) on one RTX 5090 D: the OV2 G4 protocol (ov2_time.sh) with the arms of SG1 (gate = SG2 build).
 # llama-bench tg128 at depth 0 / 8192 / 32768, 5 repetitions, 3 rounds (forward / reverse / forward), plain k4v4 twice
 # per round (A/A and drift). Arms per model: k4v4 (plain), k4v4mu_kqpos, k4v4mu_gate (kqpos + LLAMA_KV_MU_GATE=1),

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # One llama.cpp task cell of the main task results and of the gate ablations
 # (LongBench and RULER with / without the gate): start llama-server for one K-cache arm, run the task client, stop the server.
 #

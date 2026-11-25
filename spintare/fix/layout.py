@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Check that the engine's K channel order is the HF order permuted by gguf_perm, from the GGUF
 weights themselves.
 

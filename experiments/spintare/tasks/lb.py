@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """LongBench task definitions shared by the llama.cpp and vLLM clients (lc_lb.py, lc_lb_vllm.py).
 
 Prompt templates, generation lengths and scoring follow the official repository (THUDM/LongBench,

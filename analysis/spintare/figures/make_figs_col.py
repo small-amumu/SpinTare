@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Single-column versions (3.0 in wide, included unscaled, text >= 6 pt),
 2026-11-13.
 
@@ -5,7 +7,7 @@ fig_layer_bits_col   : panel (a) of fig_layer_bits (collapsing vs nearly lossles
 fig_keys_scatter_col : Qwen3-0.6B L5 (sink row lengthened) and Llama-3.1-8B L31 (small offset), side
 by side.
 fig_decode_cost_col  : decode slowdown, K4V4 only, two models; table / position kernel / + exemption gate.
-Same data and colours as make_figs.py and make_figs_ch3.py.
+Same data and colours as make_figs.py and make_figs_mechanism.py.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import make_figs as mf
-import make_figs_ch3 as m3
+import make_figs_mechanism as m3
 
 
 def fig_layer_bits_col() -> None:

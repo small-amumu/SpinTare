@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2026 The SpinTare Authors
+# Copyright 2026 Zijie Hu
 """Layer-wise restoration in llama.cpp: D with the K of selected layers kept in F16
 (LLAMA_KV_F16_LAYERS). A damage-attribution diagnostic (which layers the damage comes from), not a
 cache mode.

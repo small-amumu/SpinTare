@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """Final-round zero-GPU analyses Z1-Z9 on existing data (GATE-PRED a1 natural cells, PRED-P cells,
 logs).
 

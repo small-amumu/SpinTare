@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # OV2 G4 and the speed part of G2 (REGISTRATION_OV2.md) on one RTX 5090 D: the OV1 protocol (ov1_time.sh)
 # with the arms of OV2. llama-bench tg128 at depth 0 / 8192 / 32768, 5 repetitions, 3 rounds (forward / reverse /
 # forward), plain k4v4 of the mu6 build twice per round (A/A and drift). Arms per model:

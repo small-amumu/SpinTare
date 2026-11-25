@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 """LongBench client for a vLLM OpenAI-compatible server, same prompts / truncation / scoring as
 lc_lb.py (census protocol).
 

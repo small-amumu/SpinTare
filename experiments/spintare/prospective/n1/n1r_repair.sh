@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Zijie Hu
 # N1 repair of five left-out candidates (registered run notes "N1 repair": repair and re-test, and the repaired
 # models must not fail again), before the N1 selection. Uses the hold of n1_host.sh 0d1599af after A2 (it
 # waits up to 2 h for BOS overrides, re-running run_n1_probe.sh on every model without probe.json), so the repaired
