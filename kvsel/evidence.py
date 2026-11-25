@@ -45,10 +45,11 @@ def pth_bpw(bits: int, head_dim: int, n_meta: int) -> float:
 #     ext_factor / attn_factor (kv-mu.h, "plain NEOX rope, no YaRN"); rope_mu passes no freq
 #     factors.
 #   llama.cpp postmean-static-mean.patch touches src/models/{llama,qwen2,qwen2vl,qwen3}.cpp.
-#   vLLM plugin (spintare_vllm): attention backend, any model, but calib-mu refuses non-NeoX,
-#     partial rotation and attention_scaling != 1 (integrations/vllm, calib-mu); a
-#     length-dependent inv_freq
-#     (dynamic NTK) or mrope is not representable in its KVMR file either.
+#   vLLM plugin (spintare_vllm): the attention backend itself is model-agnostic, but it needs the
+#     KVMR mean file, and calib-mu writes one only for model_type in NEOX_TYPES (llama, mistral,
+#     qwen2, qwen3) and refuses partial rotation and attention_scaling != 1
+#     (integrations/vllm/src/spintare_vllm/calib_mu.py); a length-dependent inv_freq (dynamic NTK)
+#     or mrope is not representable in the KVMR file either.
 KERNEL_MODEL_TYPES: dict[tuple[str, str], frozenset[str] | None] = {
     ("llama.cpp", "spintare"): frozenset({"qwen2", "qwen3", "gpt_neox"}),
     # gpt_neox (Pythia) is wired but its partial rotary never reaches the gated path (kq_bias_ok
@@ -58,7 +59,8 @@ KERNEL_MODEL_TYPES: dict[tuple[str, str], frozenset[str] | None] = {
     # graph; the patched
     # qwen2vl graph (M-RoPE) was never run, so it is left out.
     ("llama.cpp", "postmean"): frozenset({"llama", "mistral", "qwen2", "qwen3"}),
-    ("vllm", "spintare"): None,  # model-agnostic backend
+    # = calib_mu.NEOX_TYPES (tests/kvsel checks that the two agree)
+    ("vllm", "spintare"): frozenset({"llama", "mistral", "qwen2", "qwen3"}),
 }
 # RoPE scaling types (HF rope_scaling / rope_parameters "rope_type") each add-back kernel handles;
 # None / "default" = no scaling. llama.cpp: linear uses freq_scale, which the kqpos path evaluates;
@@ -71,19 +73,26 @@ KERNEL_ROPE_TYPES: dict[tuple[str, str], frozenset[str | None]] = {
     ("vllm", "spintare"): frozenset({None, "default", "linear", "llama3"}),
 }
 
-# decode cost of the repairs (llama.cpp RTX 5090 D; vLLM RTX PRO 5000 throughput ratio vs stock)
+# decode cost of the repairs (llama.cpp RTX 5090 D, batch 1; vLLM RTX PRO 5000 throughput ratio vs
+# stock). llama.cpp: the configuration kvsel selects (position add-back + exemption gate, K q4_0,
+# V q8_0) is the k4v8mu_gate arm of the SG2 timing run, decode time vs no add-back; min / max over
+# Qwen2.5-7B and Qwen3-1.7B at depth 0 / 8192 / 32768 (tests/kvsel checks it against the file).
 COST = {
-    "llamacpp_spintare_decode": (0.049, 0.068),  # +4.9 % / +6.8 % per token (Qwen3-8B / 4B)
+    "llamacpp_spintare_decode": (0.0557, 0.1438),  # +5.6 % .. +14.4 % per token
     "vllm_int4_addback_tput": 0.877,
     "vllm_fp8_addback_tput": 0.841,
 }
+# what the llama.cpp timing covers: K format and model graphs (Qwen2.5-7B = qwen2, Qwen3-1.7B =
+# qwen3); other K formats or graphs get the same numbers with status to_test
+LLAMACPP_COST_TIMED_K = "q4_0"
+LLAMACPP_COST_TIMED_GRAPHS = frozenset({"qwen2", "qwen3"})
 
 SOURCE = {
     "tau_b": "experiments/spintare/detection_gate/config_check.py (frozen)",
     "TAU_ALLOW": "spintare/check/check.py",
     "FLAT_BPW": "spintare/check/check.py BPW; serving policy in analysis/kvsel/offline_check.py",
     "KERNEL_*": "patches/llama.cpp/*.patch (diff headers, kv-mu.h asserts); "
-                "integrations/vllm (calib-mu)",
-    "COST": "results/spintare/decode_overhead/res_ov2_time_agg.json, "
+                "integrations/vllm/src/spintare_vllm/calib_mu.py (NEOX_TYPES, refusals)",
+    "COST": "results/spintare/decode_overhead/res_sg2_time_agg.json (k4v8mu_gate), "
             "results/spintare/vllm_figure/vpd_analysis.txt",
 }

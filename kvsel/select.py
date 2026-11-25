@@ -217,7 +217,12 @@ def _flat_configs(m: ModelMetrics, e: Engine, dep: Deployment, tau: float) -> tu
             rs.append(Reason("F9", f"add-back throughput {cost:.3f}x of stock (batch)", "evidence"))
         if e.name == "llama.cpp" and kind == "spintare":
             lo, hi = ev.COST["llamacpp_spintare_decode"]
-            rs.append(Reason("F9", f"decode +{lo:.1%}..+{hi:.1%} per token", "evidence"))
+            timed = (fmt == ev.LLAMACPP_COST_TIMED_K
+                     and m.model_type in ev.LLAMACPP_COST_TIMED_GRAPHS)
+            rs.append(Reason("F9", f"decode +{lo:.1%}..+{hi:.1%} per token with add-back + gate "
+                             "(K q4_0 / V q8_0, Qwen2.5-7B and Qwen3-1.7B, RTX 5090 D, batch 1)"
+                             + ("" if timed else f"; not timed for K {fmt} on '{m.model_type}'"),
+                             "evidence" if timed else "to_test"))
         gib = flat_kv_gib(m, kb, vb, dep)
         cfg = Config(
             engine=e.name, k_format=fmt, v_format=vfmt,

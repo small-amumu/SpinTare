@@ -50,7 +50,9 @@ format whether to centre at all. The repair keeps the engine's per-token block l
 | Configuration check | threshold `tau_b = 2.028` fitted on 29 models / 60 cells: leave-one-family-out balanced accuracy **0.967**; all **32 held-out cells** (12 models) correct | `experiments/spintare/prospective/`, `analysis/spintare/z_analyses.py` |
 
 Costs, measured on one RTX 5090 D at batch 1: rotary add-back slows decoding by 2.8-11.2%, the exemption
-gate by a further 1.4-4.2 points, and its F32 row flags add 5.6% to the K memory
+gate by a further 1.4-4.2 points (together 5.6-14.4% with K `q4_0` / V `q8_0`;
+`results/spintare/decode_overhead/res_ov2_time_agg.json`, `res_sg2_time_agg.json`), and its F32 row
+flags add 5.6% to the K memory
 (`experiments/spintare/decode_overhead/`).
 
 <table>
@@ -148,7 +150,8 @@ the experiment READMEs.
 
 The exemption gate was evaluated in the engine on two Qwen models and one GPU. The row flags are not
 carried through state save, load or context shift. Add-back exists for llama.cpp (Qwen2, Qwen3,
-GPT-NeoX graphs) and for vLLM's per-token-head caches; mixture-of-experts models and TensorRT-LLM were
+GPT-NeoX graphs, whole-head rotary) and for vLLM's per-token-head caches (model types `llama`,
+`mistral`, `qwen2`, `qwen3`, which `calib-mu` accepts); mixture-of-experts models and TensorRT-LLM were
 not tested. The interfaces are research code and not stable; scripts keep the protocol of the registered
 run that produced each number (fixed seeds, frozen thresholds, md5 records).
 

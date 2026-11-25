@@ -5,7 +5,7 @@ A vLLM general plugin (`spintare_vllm`) plus a patch to vLLM's Triton attention 
 
 | Backend (`--attention-backend`) | Switch | What it does |
 |---|---|---|
-| `SPINTARE_AB` | `SPINTARE_KVMU=<file.kvmr>` | rotary centring with exact add-back and the exemption gate. The write path caches `R(p)(k - mu)` unless the gate exempts the row (`z = 1 - k.mu / |mu|^2 >= 0.5`), which it marks in the sign of the row's K scale; the patched kernel adds `q . R(p) mu` back to every centred row's score in fp32. Needs the patch and a per-token-head cache (`int4_per_token_head`, `int8_per_token_head`, `fp8_per_token_head`), NeoX RoPE over the whole head, no ALiBi |
+| `SPINTARE_AB` | `SPINTARE_KVMU=<file.kvmr>` | rotary centring with exact add-back and the exemption gate. The write path caches `R(p)(k - mu)` unless the gate exempts the row (`z = 1 - k.mu / |mu|^2 >= 0.5`), which it marks in the sign of the row's K scale; the patched kernel adds `q . R(p) mu` back to every centred row's score in fp32. Needs the patch and a per-token-head cache (`int4_per_token_head`, `int8_per_token_head`, `fp8_per_token_head`), NeoX RoPE over the whole head, no ALiBi; `calib-mu` writes the mean file only for model types `llama`, `mistral`, `qwen2`, `qwen3` and refuses `attention_scaling != 1` |
 | `SPINTARE` | `SPINTARE_KVPM=<file>` | static post-RoPE mean subtracted at the cache write (works on unpatched vLLM) |
 
 `SPINTARE_GATE` = `1` (default) | `centre` (no gate) | `exempt` (every row uncentred: must reproduce the

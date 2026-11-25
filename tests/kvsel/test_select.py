@@ -39,7 +39,7 @@ def test_spintare_kernel_refuses_yarn_but_vllm_accepts_llama3() -> None:
     vl = Deployment([Engine("vllm", spintare_kernel=True)], 32768)
     c = select(mk(1.0, model_type="llama", rope_type="llama3"), vl).chosen
     assert c is not None and c.centring == "spintare"
-    c = select(mk(1.0, model_type="phi3", rope_type="longrope"), vl).chosen
+    c = select(mk(1.0, model_type="qwen2", rope_type="longrope"), vl).chosen
     assert c is not None and c.k_format == "bf16"
     c = select(mk(1.0, model_type=None, known=False), vl).chosen  # RoPE scaling unknown
     assert c is not None and c.k_format == "bf16"
@@ -102,3 +102,41 @@ def test_window_longer_than_context_is_not_sliding() -> None:
     full = _arch_flags({"sliding_window": 262144, "max_position_embeddings": 131072}, 4)
     real = _arch_flags({"sliding_window": 4096, "max_position_embeddings": 8192}, 4)
     assert full.get("sliding_window_layers", 0) == 0 and real["sliding_window_layers"] == -1
+
+
+def test_vllm_coverage_matches_calib_mu() -> None:
+    import ast
+
+    from kvsel import evidence as ev
+    src = (ev.SPINTARE_REPO / "integrations" / "vllm" / "src" / "spintare_vllm" /
+           "calib_mu.py").read_text(encoding="utf-8")
+    neox = next((ast.literal_eval(n.value) for n in ast.parse(src).body
+                 if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "NEOX_TYPES"
+                 or isinstance(n, ast.AnnAssign) and getattr(n.target, "id", "") == "NEOX_TYPES"),
+                None)
+    assert neox is not None, "NEOX_TYPES not found in calib_mu.py"
+    assert ev.KERNEL_MODEL_TYPES[("vllm", "spintare")] == frozenset(neox)
+    vl = Deployment([Engine("vllm", spintare_kernel=True)], 32768)
+    c = select(mk(1.0, model_type="glm"), vl).chosen
+    assert c is not None and c.k_format == "bf16"
+
+
+def test_llamacpp_decode_cost_matches_timing_file() -> None:
+    import json
+
+    from kvsel import evidence as ev
+    f = ev.SPINTARE_REPO / "results" / "spintare" / "decode_overhead" / "res_sg2_time_agg.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    assert len(d["models"]) == 2  # the F9 reason text says "2 models"
+    v = [x for m in d["models"].values() for x in m["overhead_pct"]["k4v8mu_gate"].values()]
+    lo, hi = ev.COST["llamacpp_spintare_decode"]
+    assert abs(lo - min(v) / 100) < 5e-4 and abs(hi - max(v) / 100) < 5e-4
+
+
+def test_llamacpp_cost_is_evidence_only_where_timed() -> None:
+    dep = Deployment([Engine("llama.cpp", spintare_kernel=True)], 32768)
+    s = select(mk(1.0, model_type="qwen3"), dep)
+    by_fmt = {c.k_format: c for c in [s.chosen, *s.alternatives] if c is not None}
+    f9 = {k: [r for r in c.reasons if r.rule == "F9"][0] for k, c in by_fmt.items()
+          if c.centring == "spintare"}
+    assert f9["q4_0"].status == "evidence" and f9["q4_1"].status == "to_test"

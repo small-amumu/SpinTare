@@ -38,7 +38,7 @@ kernels then need `--model-type` and `--rope-type` (`none` = no scaling).
 | F6 | fallback: 8-bit K (llama.cpp), bf16 (vLLM) |
 | F7 | V stays q8_0 on the llama.cpp flat path |
 | F8 | vLLM INT4 / FP8 decisions use the q4_0 cell as a proxy (no fitted threshold for 128-wide blocks) |
-| F9 | decode / throughput cost of the repair is reported with the configuration |
+| F9 | decode / throughput cost of the repair is reported with the configuration (llama.cpp: add-back + gate, `results/spintare/decode_overhead/res_sg2_time_agg.json`) |
 | C1 | the safe configuration with the fewest GPU bytes that fits the budget |
 | C6 | partial / interleaved RoPE and NoPE layers: the add-back formula holds with the model's own RoPE (X5), but no kernel implements it |
 | C12 | engine coordinates come from the engine build, not from the user |
@@ -48,9 +48,9 @@ Kernel coverage (C13), read from the patch sources:
 
 | Engine, repair | Model graphs | RoPE scaling |
 |---|---|---|
-| llama.cpp add-back + gate | qwen2, qwen3, gpt_neox | none, linear (YaRN trips the gated decode path) |
+| llama.cpp add-back + gate | qwen2, qwen3, gpt_neox (whole-head rotary only) | none, linear (YaRN trips the gated decode path) |
 | llama.cpp static mean | llama (incl. Mistral), qwen2, qwen3 | - (only inside 2K) |
-| vLLM add-back plugin | any | none, linear, llama3; refuses partial rotation and attention_scaling != 1 |
+| vLLM add-back plugin | llama, mistral, qwen2, qwen3 (what `calib-mu` accepts) | none, linear, llama3; refuses partial rotation and attention_scaling != 1 |
 
 ## Offline check
 
