@@ -14,7 +14,7 @@
 #                    ../smoothattention/sa_fold.py)
 #          spintare  int4_per_token_head, backend SPINTARE_AB: rotary centring with exact
 #                    add-back and the exemption gate (needs vLLM 5cb0fd265 with
-#                    patches/vllm/spintare-addback.patch and `pip install -e integrations/vllm`)
+#                    integrations/patches/vllm/spintare-addback.patch and `pip install -e integrations/vllm`)
 #   name   model label; results go to $KVREL_WORK/results/{lc_vllm,ruler_vllm}/<name>/
 # environment (after experiments/scripts/env.sh):
 #   HF     Hugging Face model directory;  MU: KVMR file for spintare (python -m spintare_vllm

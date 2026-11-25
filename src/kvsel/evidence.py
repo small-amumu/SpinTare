@@ -2,7 +2,7 @@
 # Copyright 2026 Zijie Hu
 """Evidence constants for the KV-cache selector.
 
-Every number here comes from an existing measurement (SpinTare runs in results/spintare/) or from
+Every number here comes from an existing measurement (SpinTare runs in experiments/results/spintare/) or from
 the patch sources in integrations/patches/. The SOURCE dict names the file each value was read from; rules that
 have no measurement behind them are marked TO_TEST in select.py and carry no constant here.
 """

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Zijie Hu
 # The run behind the vLLM figure (all panels, one RTX PRO 5000, 2026-11-23). Frozen output and the
-# analyzer report: results/spintare/vllm_figure/ (vpd_result.json, vpd_analysis.txt).
+# analyzer report: experiments/results/spintare/vllm_figure/ (vpd_result.json, vpd_analysis.txt).
 #   stage 0  tree vllm_59674 = vllm_plain + pr59674_applied.diff (PR #59674 on vLLM 5cb0fd265d;
 #            md5 of the four patched files checked)
 #   stage 1  output KL (spintare_vllm.kld: bf16 reference, CTX 2048, 4 chunks, eager) on
@@ -14,7 +14,7 @@
 #            3 repeats round robin, then a stock int4 re-time
 # INT4 arms run with SPINTARE_NO_HADACORE=1 (vLLM's hadacore kernel is not usable on that GPU).
 # Layout under $VPD_ROOT: vllm_plain (vLLM 5cb0fd265d source tree), vllm_ab2 (the same tree with
-# patches/vllm/spintare-addback.patch), site4 (the spintare_vllm plugin, integrations/vllm/src),
+# integrations/patches/vllm/spintare-addback.patch), site4 (the spintare_vllm plugin, integrations/vllm/src),
 # venv312 (Python with torch and vLLM's compiled parts), data/diag_text.txt (md5 4c8f1ecf),
 # results/vp2/<model>/m.kvmr (pre-RoPE means from `python -m spintare_vllm calib-mu`),
 # runs/vpd/ (this directory). Models in $KVREL_MODELS. Resumable: a run whose JSON exists is kept.

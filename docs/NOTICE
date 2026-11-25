@@ -1,11 +1,11 @@
 SpinTare
 Copyright 2026 Zijie Hu
 
-patches/llama.cpp/*.patch modify llama.cpp (https://github.com/ggml-org/llama.cpp), Copyright (c) 2023-2026 The
-ggml authors, licensed under the MIT License (patches/llama.cpp/LICENSE-llama.cpp.txt). The patched files remain
+integrations/patches/llama.cpp/*.patch modify llama.cpp (https://github.com/ggml-org/llama.cpp), Copyright (c) 2023-2026 The
+ggml authors, licensed under the MIT License (integrations/patches/llama.cpp/LICENSE-llama.cpp.txt). The patched files remain
 under that license; the new files added by the patches are licensed under Apache-2.0 like the rest of this repository.
 
-patches/vllm/spintare-addback.patch modifies vLLM (https://github.com/vllm-project/vllm), Copyright the vLLM project
+integrations/patches/vllm/spintare-addback.patch modifies vLLM (https://github.com/vllm-project/vllm), Copyright the vLLM project
 contributors, licensed under the Apache License 2.0.
 
 The RULER data come from NVIDIA RULER's own generator, which is called but not included; it is used under its own
