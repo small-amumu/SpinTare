@@ -1,37 +1,45 @@
-# SpinTare tools
+# SpinTare CLI tools
 
-> **Note:** the `calib` / postmean repair below is the static-mean variant (the static-mean baseline), kept as a tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back plus the exemption gate, in `integrations/patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch` (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` / `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
+> **Important:** the `calib` / postmean repair below is the static-mean variant (the static-mean baseline), kept as a
+> diagnostic and baseline tool. The repair reported for SpinTare is rotary centring with exact position-wise add-back
+> plus the exemption gate, in `integrations/patches/llama.cpp/spintare-rotary-addback-exemption-gate.patch`
+> (pre-RoPE mean from `experiments/spintare/calib_and_diag/mu_calib.py`, enabled with `LLAMA_KV_DEBIAS_MU` /
+> `LLAMA_KV_MU_GATE`); see `docs/architecture.md`.
 
+## Overview and installation
 
 Tools to check, before deployment, whether a low-bit K cache (llama.cpp `q4_0`, `q4_1`, `q8_0`) damages a
 model without any error, to measure where the damage comes from, and to apply the static-mean repair.
 
-The engine tools (`check`, `restore-engine`) need llama.cpp built with `integrations/patches/llama.cpp/postmean-static-mean.patch`
-(`experiments/scripts/build_llama_cpp.sh postmean`; `restore-engine` also runs on the SpinTare tree). Postmean
-reads a KVPM file through `LLAMA_KV_POSTMEAN`; the patch hooks it into the qwen2, qwen3, llama and qwen2vl
-graphs only, and other architectures ignore it (the check notices this: a D that does not change under postmean
-is reported as "patch did not run"). Postmean does not support context shifting.
+- Install: `pip install -e .` (Python >= 3.10, PyTorch, transformers; `pip install -e .[layout]` adds the `gguf`
+  package for `layout`). Every tool runs as `python -m spintare <command>` (or `spintare <command>` after
+  installation); `python -m spintare --help` lists the commands.
+- Engine requirements: the engine tools (`check`, `restore-engine`) need llama.cpp built with
+  `integrations/patches/llama.cpp/postmean-static-mean.patch` (`experiments/scripts/build_llama_cpp.sh postmean`;
+  `restore-engine` also runs on the SpinTare tree).
+- Postmean architecture support: postmean reads a KVPM file through `LLAMA_KV_POSTMEAN`; the patch hooks it into the
+  qwen2, qwen3, llama and qwen2vl graphs only, and other architectures ignore it (the check notices this: a D that
+  does not change under postmean is reported as "patch did not run"). Postmean does not support context shifting.
+- Safety: tools that load a Hugging Face checkpoint never run the checkpoint's own Python code unless
+  `--trust-remote-code` is given (where the tool offers it).
 
-Install: `pip install -e .` (Python >= 3.10, PyTorch, transformers; `pip install -e .[layout]` adds the `gguf`
-package for `layout`). Every tool runs as `python -m spintare <command>` (or `spintare <command>` after
-installation); `python -m spintare --help` lists the commands. Tools that load a Hugging Face checkpoint never run
-the checkpoint's own Python code unless `--trust-remote-code` is given (where the tool offers it).
+## Commands
 
-## Check (llama.cpp)
+### Engine verification (llama.cpp)
 
 | Command | What it does |
 |---|---|
 | `check` | The pre-deployment check. For each candidate K format (sorted smallest first), it measures D, the mean output KL against the 16-bit K cache (`llama-perplexity --kl-divergence`, 4 chunks of 2048 tokens, V `q8_0` in both runs). D < 0.1016 allows the format; otherwise it retries with the postmean repair; a repaired D' > 0.3577 raises an alarm. If nothing passes it falls back to `q8_0`, then to the 16-bit cache. The output records `LLAMA_ATTN_ROT_DISABLE` and the patch's `GGML_CUDA_*` kernel switches when they are set, as they change D. |
 | `restore-engine` | Damage attribution in the engine: D with the K of selected layers kept in F16 (`LLAMA_KV_F16_LAYERS`, from the patch). A diagnostic of where the damage comes from, not a cache mode. |
 
-## Repair
+### Static-mean calibration and GGUF layout
 
 | Command | What it does |
 |---|---|
 | `calib`, `calib-vl` | Static post-RoPE key mean per layer and KV head, written as a KVPM file for `LLAMA_KV_POSTMEAN`. The engine subtracts the mean after RoPE, before the cache write, and changes nothing on the attention side: because the mean m is one static vector per layer and KV head, the term `q . m` is the same for every key of a query and cancels in the softmax. This holds without attention sinks, without a logit softcap and without context shifting, which is the case for the architectures the patch hooks. The Hugging Face simulation adds `q . m` back explicitly, which gives the same softmax. Removing a key mean whose score term cancels is a known idea (SageAttention smooths K by its mean over tokens). |
 | `permute`, `layout` | Llama-family GGUFs permute the q / k channels per head. `calib` writes the Hugging Face order, so for Llama / Mistral the file must be reordered with `permute` (calib prints a note); a file in the wrong order is accepted by the engine silently and only shows up as a worse D'. `layout` reports which order a GGUF's K weights use. |
 
-## Measurement (Hugging Face simulation of the engine's quantiser)
+### Measurement (Hugging Face simulation)
 
 | Command | What it does |
 |---|---|
@@ -39,13 +47,13 @@ the checkpoint's own Python code unless `--trust-remote-code` is given (where th
 | `restore` | Damage attribution in simulation. Every layer is quantised, then layers are restored one at a time and cumulatively. |
 | `inject`, `inject-verify` | Writes a controlled shared key offset into a released checkpoint, then verifies the injected checkpoint. |
 
-All simulated quantisers except `attn-kl-vllm` (vLLM's format) follow ggml's reference rules on 32-element blocks. They work in the engine's channel
-order and basis, which includes the upstream llama.cpp K rotation (turn it off with `LLAMA_ATTN_ROT_DISABLE=1`).
+All simulated quantisers except `attn-kl-vllm` (vLLM's format) follow ggml's reference rules on 32-element blocks.
+They work in the engine's channel order and basis, which includes the upstream llama.cpp K rotation (turn it off with `LLAMA_ATTN_ROT_DISABLE=1`).
 The simulation quantises K only and keeps V exact, while the engine check runs with a `q8_0` V cache in both the
 reference and the test; simulated D is therefore close to, but not the same number as, the engine D on which the
 check's thresholds are defined. See `src/spintare/sim.py`.
 
-## Baselines
+### Detection baselines
 
 | Command | What it does |
 |---|---|
@@ -53,14 +61,14 @@ check's thresholds are defined. See `src/spintare/sim.py`.
 | `rules` | The baseline decision rules on those features: vLLM PR #63081, the offset-ratio rule, the mlx-quant-fidelity KL band, a SageAttention-style cosine check, and fitted thresholds for the remaining features. |
 | `attn-kl-vllm` | Simulated attention KL for vLLM's `int4_per_token_head` format (the llama.cpp formats are covered by `probe`). |
 
-## Small-sample task evaluation
+### Small-sample task evaluation
 
 | Command | What it does |
 |---|---|
 | `longbench` | LongBench subtasks through `llama-server`, following the LongBench prompts, truncation and metrics, with greedy decoding. The deviations from the official evaluation (first-line scoring for the three multi-hop QA tasks, truncation within the server context, the built-in Llama 3.1 template) are listed at the top of `src/spintare/tasks/longbench.py`; they apply to both runs of a comparison, so the paired difference is much less affected than the absolute scores. Get the data with `experiments/scripts/get_longbench.sh` (pinned dataset revision, sha256-checked; set `HF_ENDPOINT` for a mirror). |
 | `paired-ci` | Paired bootstrap interval of the score difference against the 16-bit cache, paired by question id and resampled within each task (stratified), and the verdict: collapse (drop of 20 points or more, relative drop of 50% or more, or a repetition-loop rate of 20% or more), lossless (interval lower bound within the 3-point margin), partial drop (interval upper bound below the margin), or undecided. |
 
-## Thresholds
+## Thresholds reference
 
 | Constant | Used by | Origin |
 |---|---|---|

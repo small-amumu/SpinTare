@@ -1,6 +1,6 @@
-# Setup
+# Setup guide
 
-## 1. Python
+## 1. Python environment
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
@@ -8,12 +8,12 @@ pip install -e ".[test,layout,figures]"     # torch >= 2.3, transformers >= 4.56
 pytest -q tests                              # CPU unit tests
 ```
 
-The vLLM experiments need vLLM at commit 5cb0fd265 with `integrations/patches/vllm/spintare-addback.patch` and the plugin
-in `integrations/vllm/` (see its README). The reported runs used torch 2.13.0 and transformers 5.18.0.
+Reference versions: the reported runs used torch 2.13.0 and transformers 5.18.0. The vLLM experiments need vLLM at commit
+5cb0fd265 with `integrations/patches/vllm/spintare-addback.patch` and the plugin in `integrations/vllm/` (see its README).
 
-## 2. Paths (`experiments/scripts/env.sh`)
+## 2. Path configuration (`experiments/scripts/env.sh`)
 
-No script contains a machine path. Every location is an environment variable with a default under the
+No script hardcodes a machine path. Every location is an environment variable with a default under the
 repository (`work/`). Source `experiments/scripts/env.sh` once per shell; every experiment driver also sources it.
 
 | Variable | Default | Holds |
@@ -41,8 +41,12 @@ experiments/scripts/build_llama_cpp.sh all 120        # SpinTare tree + unpatche
 experiments/scripts/build_llama_cpp.sh spintare       # only the SpinTare tree, native architecture
 ```
 
-Each tree is a fresh clone of upstream at 3bb63cb owned by the script (it refuses to reset a directory it
-did not create). Switches of the SpinTare tree, all read once at start-up:
+Each tree is a fresh clone of upstream at 3bb63cb managed by the script (it refuses to reset a directory it
+did not create).
+
+### Runtime switches (SpinTare tree)
+
+All switches are read once at start-up:
 
 | Variable | Effect |
 |---|---|
@@ -50,12 +54,15 @@ did not create). Switches of the SpinTare tree, all read once at start-up:
 | `LLAMA_KV_DEBIAS_MU_PATH=kqpos` | decode add-back computed from positions inside the flash-attention kernel (the reported path; `kqbias` = table, `kadd` = rebuild K) |
 | `LLAMA_KV_MU_GATE=1` | exemption gate (needs `kqpos`; single KV stream) |
 
-With no switch the tree follows the upstream path. GGUF conversion:
+With no switch the tree runs the unmodified upstream path.
+
+### GGUF conversion
+
 `python $KVREL_LLAMA_CPP/convert_hf_to_gguf.py $KVREL_MODELS/<model> --outtype q8_0 --outfile
 $KVREL_GGUF/<tag>-q8_0.gguf`. Llama-family GGUFs permute q / k channels: reorder mean files with
 `python -m spintare permute`.
 
-## 4. Data
+## 4. Datasets
 
 - `experiments/data/*.txt`: shipped calibration and evaluation texts (`experiments/data/README.md`).
 - LongBench: `experiments/scripts/get_longbench.sh "$KVREL_WORK/data/data"` (pinned revision, sha256-checked).

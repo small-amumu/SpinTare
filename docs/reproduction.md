@@ -1,11 +1,15 @@
-# Reproduction: every result and figure
+# Reproduction guide: every result and figure
 
-Conventions: `. experiments/scripts/env.sh` first. **Re-derive** = runs on a CPU from the shipped frozen results in
-`experiments/results/spintare/` (figures go next to the script, or to `FIG_OUT`). **Run** = needs models and a GPU;
-the script is the one behind the number, with the settings of the registered run. A *cell* is one model
-under one K format.
+Load the repository environment before running any command: `. experiments/scripts/env.sh`.
 
-## Re-derive everything that can be re-derived
+Terminology:
+
+- **Re-derive** (CPU only): recomputes tables and figures from the frozen results shipped in
+  `experiments/results/spintare/`. Outputs go next to each script, or to `FIG_OUT`.
+- **Run** (GPU and models): re-executes the script behind the number, with the settings of the registered run.
+- **Cell**: one model under one K format.
+
+## Quick CPU re-derivation (all aggregates and figures)
 
 ```bash
 pip install -e ".[figures]"
@@ -17,7 +21,7 @@ for f in make_figs make_figs_mechanism make_figs_col make_fig_length_kl_col make
 done
 ```
 
-`make_eval_figs.py` / `make_eval_tables.py` regenerate `eval_numbers.json` and the generated tables
+`make_eval_figs.py` and `make_eval_tables.py` also regenerate `eval_numbers.json` and the generated tables
 (`tab_eval_*.tex`, `tab_eval_*.md`) from the frozen results.
 
 ## Core results
@@ -37,7 +41,7 @@ done
 | KL by position, 12 models | LC1 | `make_eval_figs.py` <- `res_lc1_agg.json` | RTX 5090 D |
 | Each repair step at equal bits | LC1 | `make_eval_tables.py` <- `res_lc1_agg.json` | RTX 5090 D |
 | Accuracy vs KV memory per generation | reasoning cells | `make_eval_figs.py` <- `reasoning_r1/` | RTX PRO 5000 |
-| Configuration check numbers, bias rule | `detection_gate/`, `prospective/` | `experiments/analysis/spintare/z_analyses.py` | - |
+| Configuration check metrics, bias rule | `detection_gate/`, `prospective/` | `experiments/analysis/spintare/z_analyses.py` | - |
 
 ## Supporting results
 
@@ -66,19 +70,19 @@ done
 Paths in the tables are relative to `experiments/spintare/`, `experiments/results/spintare/` and
 `experiments/analysis/spintare/figures/`. "-" in the GPU column: CPU only, or several cards of the census.
 
-## Notes
+## Implementation notes
 
-- Mean files: the SpinTare cells used the pre-RoPE mean of the first 2048 tokens of `experiments/data/long_text.txt`
+- Mean calibration: the SpinTare cells used the pre-RoPE mean of the first 2048 tokens of `experiments/data/long_text.txt`
   (`calib_and_diag/mu_calib.py`); the static-mean cells used the post-RoPE mean of the same window
   (`calib_and_diag/pm_calib.py`, or `python -m spintare calib` for the KVPM header).
 - Intervals: every LongBench interval comes from `calib_and_diag/paired_ci.py` (one bootstrap index shared
   by the tasks). `python -m spintare paired-ci` resamples each task separately; its bounds differ by up to
   0.3 points with the same point estimates and verdicts.
-- Script headers cite the records of the experiment registry (`REGISTRATION_*.md`, `REG_*`, amendment
+- Registry references: script headers cite the records of the experiment registry (`REGISTRATION_*.md`, `REG_*`, amendment
   and review ids such as `A2` or `r31 S-5`) and, in a few places, driver scripts of the original queues
   (`ov1_time.sh`, `n1_host.sh`, `run_n1_probe.sh`). The registry and those queue drivers are not part of
   this repository; `REGISTRATION_LC1.md` is included as an example. `prospective/n1/n1r_repair.sh` is the
   record of a repair step that ran inside the N1 queue and does not run on its own.
-- Raw per-run files (server logs, per-item records of the task tables other than reasoning, reference
+- Unshipped artifacts: raw per-run files (server logs, per-item records of the task tables other than reasoning, reference
   log-probabilities) are not shipped; every shipped aggregate was produced from them by the scripts named
   here. Model weights, GGUFs and folded checkpoints are not shipped either.

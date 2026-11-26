@@ -1,4 +1,4 @@
-# kvsel: probe -> KV-cache configuration
+# kvsel: automated KV-cache configuration selector
 
 `kvsel` reads one 16-bit probe of a model (the SpinTare census probe,
 `experiments/spintare/detection_gate/kvprobe_unified.py`) plus the model's `config.json` and the
@@ -13,7 +13,7 @@ Every reason carries a status: `evidence` (a measurement, or a fact read from th
 `check` (an engine run is needed before serving, e.g. the engine-KL check of `spintare check`) or
 `to_test` (no measurement yet).
 
-## Use
+## Usage
 
 ```bash
 python -m kvsel probe --model $M --order hf --out probe.json            # one 16-bit forward
@@ -21,13 +21,14 @@ python -m kvsel select probe.json --config $M/config.json \
     --engine llama.cpp:spintare --ctx 32768 --gpu-kv-gib 6
 ```
 
-Engines: `llama.cpp`, `vllm`; suffix `:spintare` (add-back + gate kernel) or `:postmean` (static-mean
-patch). Without `--config` the selector does not know NoPE layers or the RoPE scaling type: add-back
-kernels then need `--model-type` and `--rope-type` (`none` = no scaling).
+- Supported `--engine` values: `llama.cpp`, `vllm`; suffix `:spintare` (add-back + gate kernel) or `:postmean`
+  (static-mean patch).
+- Without `--config` the selector does not know NoPE layers or the RoPE scaling type: add-back kernels then need
+  `--model-type` and `--rope-type` (`none` = no scaling).
 
-## Rules
+## Decision rules
 
-| Id | Rule |
+| ID | Rule |
 |---|---|
 | F0 | `b_top2` in engine coordinates (llama.cpp Hadamard basis, GGUF channel order for Llama) |
 | F1 | `b_top2 > tau_b` -> run the format plain, no centring |
@@ -44,7 +45,9 @@ kernels then need `--model-type` and `--rope-type` (`none` = no scaling).
 | C12 | engine coordinates come from the engine build, not from the user |
 | C13 | add-back / static-mean coverage per (engine, model graph, RoPE scaling); see `src/kvsel/evidence.py` `KERNEL_*` |
 
-Kernel coverage (C13), read from the patch sources:
+## Kernel coverage matrix (C13)
+
+Read from the patch sources:
 
 | Engine, repair | Model graphs | RoPE scaling |
 |---|---|---|
@@ -52,7 +55,7 @@ Kernel coverage (C13), read from the patch sources:
 | llama.cpp static mean | llama (incl. Mistral), qwen2, qwen3 | - (only inside 2K) |
 | vLLM add-back plugin | llama, mistral, qwen2, qwen3 (what `calib-mu` accepts) | none, linear, llama3; refuses partial rotation and attention_scaling != 1 |
 
-## Offline check
+## Offline verification (CPU)
 
 ```bash
 python experiments/analysis/kvsel/offline_check.py        # CPU only; writes experiments/results/kvsel/offline_check/
