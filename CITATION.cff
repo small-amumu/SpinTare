@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "SpinTare: detection and mitigation of offset-induced K-cache collapse"
+type: software
+authors:
+  - family-names: "Hu"
+    given-names: "Zijie"
+license: Apache-2.0
+repository-code: "https://github.com/small-amumu/SpinTare"
+url: "https://github.com/small-amumu/SpinTare"
+version: 0.1.0
+date-released: 2026-11-22
+keywords:
+  - kv-cache
+  - quantization
+  - llm-inference
+  - llama.cpp
+  - vllm
